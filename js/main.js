@@ -110,7 +110,7 @@
     ["The Glass Door", "Ground Floor"],
     ["The Living Room", "Ground Floor"],
     ["The Kitchen", "Ground Floor"],
-    ["The Stairwell", "Mid Air"],
+    ["The Stairwell", "Climbing"],
     ["The Master Suite", "First Floor"],
     ["The Terrace", "Garden Level"],
   ];
@@ -123,7 +123,7 @@
   };
 
   /* stage bands matched to where the camera actually is on its path */
-  const BANDS = [0.10, 0.23, 0.35, 0.44, 0.52, 0.60, 0.68, 0.80, 0.92, 1.01];
+  const BANDS = [0.07, 0.19, 0.27, 0.33, 0.39, 0.45, 0.52, 0.79, 0.94, 1.01];
 
   const canvas = $("#journeyCanvas");
   const scene3d = canvas && window.initOnyxScene ? initOnyxScene(canvas) : null;
