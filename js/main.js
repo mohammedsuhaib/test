@@ -125,8 +125,21 @@
   /* stage bands matched to where the camera actually is on its path */
   const BANDS = [0.07, 0.19, 0.27, 0.33, 0.39, 0.45, 0.52, 0.79, 0.94, 1.01];
 
+  /* view mode: photoreal imagery by default, 3D flythrough on request */
+  let use3d = false;
+  try { use3d = localStorage.getItem("onyx-view") === "3d"; } catch (e) {}
+  const viewBtn = $("#viewToggle");
+
   const canvas = $("#journeyCanvas");
-  const scene3d = canvas && window.initOnyxScene ? initOnyxScene(canvas) : null;
+  const scene3d = use3d && canvas && window.initOnyxScene ? initOnyxScene(canvas) : null;
+
+  if (viewBtn) {
+    viewBtn.textContent = scene3d ? "View photos" : "View in 3D";
+    viewBtn.addEventListener("click", () => {
+      try { localStorage.setItem("onyx-view", scene3d ? "photo" : "3d"); } catch (e) {}
+      location.reload();
+    });
+  }
 
   if (scene3d) {
     /* ═══ true 3D flythrough ═══ */

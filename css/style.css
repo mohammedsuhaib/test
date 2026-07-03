@@ -201,6 +201,18 @@ html.reduced .journey__hud { display: none; }
   background: var(--gold);
   transform: scaleX(0); transform-origin: left;
 }
+.journey__hud-toggle {
+  background: rgba(10, 10, 11, 0.35);
+  border: 1px solid var(--line);
+  color: var(--cream);
+  font: 500 0.62rem var(--sans);
+  letter-spacing: 0.25em; text-transform: uppercase;
+  padding: 0.55rem 1.1rem; border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+.journey__hud-toggle:hover { border-color: var(--gold); color: var(--gold); }
 
 /* ── Manifesto ── */
 .manifesto__pin {
