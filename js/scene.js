@@ -15,7 +15,9 @@ window.initOnyxScene = function (canvas) {
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.25;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x06070c);
@@ -23,10 +25,34 @@ window.initOnyxScene = function (canvas) {
 
   const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 3000);
 
+  /* ── image-based environment light: night sky → warm horizon ── */
+  {
+    const w = 64, h = 32, data = new Uint8Array(w * h * 4);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const t = y / (h - 1);
+      let r, g, b;
+      if (t < 0.5) { const k = t / 0.5; r = 8 + 26 * k; g = 10 + 20 * k; b = 18 + 30 * k; }
+      else if (t < 0.62) { const k = (t - 0.5) / 0.12; r = 34 + 96 * k; g = 30 + 46 * k; b = 48 - 14 * k; }
+      else { const k = (t - 0.62) / 0.38; r = 130 - 116 * k; g = 76 - 66 * k; b = 34 - 26 * k; }
+      const i = (y * w + x) * 4;
+      data[i] = r; data[i + 1] = g; data[i + 2] = b; data[i + 3] = 255;
+    }
+    const envTex = new THREE.DataTexture(data, w, h);
+    envTex.needsUpdate = true;
+    envTex.mapping = THREE.EquirectangularReflectionMapping;
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromEquirectangular(envTex).texture;
+    envTex.dispose(); pmrem.dispose();
+  }
+
   /* ── lights ── */
-  scene.add(new THREE.AmbientLight(0x2a3045, 1.4));
+  scene.add(new THREE.AmbientLight(0x2a3045, 0.55));
   const moonLight = new THREE.DirectionalLight(0x93a4c8, 1.1);
   moonLight.position.set(-120, 200, -80);
+  moonLight.castShadow = true;
+  moonLight.shadow.mapSize.set(2048, 2048);
+  Object.assign(moonLight.shadow.camera, { left: -45, right: 45, top: 45, bottom: -45, far: 600 });
+  moonLight.shadow.bias = -0.0004;
   scene.add(moonLight);
 
   const warm = (x, y, z, intensity, dist, color) => {
@@ -42,6 +68,7 @@ window.initOnyxScene = function (canvas) {
       new THREE.BoxGeometry(w, h, d),
       new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.85, metalness: 0.05 }, opts || {}))
     );
+    m.castShadow = m.receiveShadow = true;
     scene.add(m);
     return m;
   };
@@ -50,11 +77,13 @@ window.initOnyxScene = function (canvas) {
       new THREE.CylinderGeometry(rTop, rBot, h, 14),
       new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.8 }, opts || {}))
     );
+    m.castShadow = m.receiveShadow = true;
     scene.add(m);
     return m;
   };
   const cone = (r, h, color) => {
     const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 9), new THREE.MeshStandardMaterial({ color, roughness: 1 }));
+    m.castShadow = m.receiveShadow = true;
     scene.add(m);
     return m;
   };
@@ -65,6 +94,71 @@ window.initOnyxScene = function (canvas) {
     return m;
   };
   const at = (m, x, y, z) => { m.position.set(x, y, z); return m; };
+
+  /* ── procedural textures (canvas-painted PBR maps) ── */
+  const canvasTex = (draw, w, h, rx, ry) => {
+    const c = document.createElement("canvas");
+    c.width = w || 512; c.height = h || 512;
+    draw(c.getContext("2d"), c.width, c.height);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(rx || 1, ry || 1);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+  const woodTex = canvasTex((ctx, w, h) => {
+    ctx.fillStyle = "#8a6d4f"; ctx.fillRect(0, 0, w, h);
+    for (let p = 0; p < 8; p++) {
+      const y0 = (h / 8) * p;
+      ctx.fillStyle = `rgba(${60 + Math.random() * 40},${44 + Math.random() * 26},${26 + Math.random() * 16},0.35)`;
+      ctx.fillRect(0, y0, w, h / 8);
+      ctx.fillStyle = "rgba(20,12,6,0.8)"; ctx.fillRect(0, y0, w, 2);
+      for (let g = 0; g < 40; g++) {
+        ctx.strokeStyle = `rgba(40,26,14,${0.05 + Math.random() * 0.1})`;
+        const gy = y0 + Math.random() * (h / 8);
+        ctx.beginPath(); ctx.moveTo(0, gy); ctx.bezierCurveTo(w * 0.3, gy + 4, w * 0.7, gy - 4, w, gy); ctx.stroke();
+      }
+    }
+  }, 512, 512, 3, 2);
+  const tileTex = canvasTex((ctx, w, h) => {
+    for (let ty = 0; ty < 4; ty++) for (let tx = 0; tx < 4; tx++) {
+      const v = 38 + Math.random() * 10;
+      ctx.fillStyle = `rgb(${v},${v + 2},${v + 6})`;
+      ctx.fillRect(tx * w / 4, ty * h / 4, w / 4, h / 4);
+    }
+    ctx.strokeStyle = "rgba(8,9,12,0.9)"; ctx.lineWidth = 3;
+    for (let i = 0; i <= 4; i++) {
+      ctx.beginPath(); ctx.moveTo(i * w / 4, 0); ctx.lineTo(i * w / 4, h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * h / 4); ctx.lineTo(w, i * h / 4); ctx.stroke();
+    }
+  }, 512, 512, 8, 6);
+  const stuccoTex = canvasTex((ctx, w, h) => {
+    ctx.fillStyle = "#cfc7b8"; ctx.fillRect(0, 0, w, h);
+    const img = ctx.getImageData(0, 0, w, h);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 14;
+      img.data[i] += n; img.data[i + 1] += n; img.data[i + 2] += n;
+    }
+    ctx.putImageData(img, 0, 0);
+  }, 256, 256, 2, 1);
+
+  /* ── light halos (cheap bloom) ── */
+  const glowTex = canvasTex((ctx, w, h) => {
+    const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    g.addColorStop(0, "rgba(255,255,255,1)");
+    g.addColorStop(0.25, "rgba(255,255,255,0.45)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  }, 128, 128, 1, 1);
+  const halo = (x, y, z, size, color, opacity) => {
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTex, color, transparent: true, opacity: opacity || 0.6,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    m.position.set(x, y, z); m.scale.set(size, size, 1);
+    scene.add(m);
+    return m;
+  };
 
   /* ── stars ── */
   {
@@ -88,6 +182,7 @@ window.initOnyxScene = function (canvas) {
   /* ── ground ── */
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(2400, 2400), new THREE.MeshStandardMaterial({ color: 0x0b0e12, roughness: 1 }));
   ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
   scene.add(ground);
 
   /* ── the city: window-lights + towers, kept clear of the villa ── */
@@ -120,7 +215,7 @@ window.initOnyxScene = function (canvas) {
   const glassMat = () => new THREE.MeshStandardMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.14, roughness: 0.1, metalness: 0.4 });
 
   /* plot, hedges, gate */
-  at(box(64, 0.4, 44, 0x23252b, { roughness: 0.95 }), 0, 0.2, 4);
+  at(box(64, 0.4, 44, 0xffffff, { map: tileTex, roughness: 0.95 }), 0, 0.2, 4);
   at(box(1.2, 1.3, 42, 0x16241a), -31.4, 1.0, 4);
   at(box(1.2, 1.3, 42, 0x16241a), 31.4, 1.0, 4);
   at(box(64, 1.3, 1.2, 0x16241a), 0, 1.0, -17.6);
@@ -134,10 +229,10 @@ window.initOnyxScene = function (canvas) {
   for (let i = 0; i < 5; i++) glow(0.11, 0xffc98a, i % 2 ? 2.4 : -2.4, 0.7, 20 + i * 3.4);
 
   /* ── ground floor shell (right side is a double-height stair void) ── */
-  at(box(16.6, 0.3, 10.6, stone), 0, 0.55, -1);            // floor slab
-  at(box(16.6, 3.6, 0.4, cream), 0, 2.5, -6);              // back wall (ground)
-  at(box(0.4, 3.6, 10.4, cream), -8.1, 2.5, -1);           // left wall (ground)
-  at(box(0.4, 7.6, 10.4, cream), 8.1, 4.25, -1);           // right wall — full height past the void
+  at(box(16.6, 0.3, 10.6, 0xffffff, { map: woodTex, roughness: 0.65 }), 0, 0.55, -1); // timber floor slab
+  at(box(16.6, 3.6, 0.4, 0xffffff, { map: stuccoTex }), 0, 2.5, -6);   // back wall (ground)
+  at(box(0.4, 3.6, 10.4, 0xffffff, { map: stuccoTex }), -8.1, 2.5, -1); // left wall (ground)
+  at(box(0.4, 7.6, 10.4, 0xffffff, { map: stuccoTex }), 8.1, 4.25, -1); // right wall — full height past the void
   at(box(18.4, 0.4, 2.0, 0x1d1f26), 0, 4.55, 3.6);         // front eyebrow over the glass
 
   /* glass facade (ground) + mullions */
@@ -145,10 +240,10 @@ window.initOnyxScene = function (canvas) {
   [-5.3, 0, 5.3].forEach((x) => at(box(0.14, 3.4, 0.16, dark), x, 2.45, 4.06));
 
   /* ── upper floor: suite slab + stair landing, with an open stairwell ── */
-  at(box(12.9, 0.35, 8.6, stone), -1.85, 4.85, -1.6);      // slab A — suite floor (x −8.3…4.6)
+  at(box(12.9, 0.35, 8.6, 0xffffff, { map: woodTex, roughness: 0.65 }), -1.85, 4.85, -1.6); // slab A — suite floor
   at(box(3.7, 0.35, 2.5, stone), 6.45, 4.85, -4.65);       // slab B — landing (x 4.6…8.3, back)
-  at(box(16.6, 3.1, 0.35, cream), 0, 6.5, -5.9);           // back wall (upper, full width)
-  at(box(0.35, 3.1, 8.4, cream), -8.1, 6.5, -1.6);         // left wall (upper)
+  at(box(16.6, 3.1, 0.35, 0xffffff, { map: stuccoTex }), 0, 6.5, -5.9); // back wall (upper, full width)
+  at(box(0.35, 3.1, 8.4, 0xffffff, { map: stuccoTex }), -8.1, 6.5, -1.6); // left wall (upper)
   /* interior partition with a real doorway onto the landing */
   at(box(0.35, 3.1, 5.0, cream), 3.45, 6.5, 0.15);         // partition, front of door
   at(box(0.35, 3.1, 0.9, cream), 3.45, 6.5, -5.35);        // partition, back of door
@@ -177,7 +272,8 @@ window.initOnyxScene = function (canvas) {
   at(cyl(0.26, 0.3, 0.5, dark), -7.3, 0.95, -5.1);         // plant pot
   cone(0.55, 1.5, 0x24402c).position.set(-7.3, 1.95, -5.1);
   at(box(0.9, 0.55, 0.9, 0x5a4f42), -2.2, 1.0, 2.6);       // accent pouf
-  warm(-4.4, 3.4, 0, 26, 16);
+  const lLiving = warm(-4.4, 3.4, 0, 26, 16);
+  lLiving.castShadow = true; lLiving.shadow.mapSize.set(512, 512); lLiving.shadow.bias = -0.01;
 
   /* ── kitchen + dining (right of centre) ── */
   at(box(3.4, 1.0, 1.3, 0xd8d2c4), 4.6, 1.2, 0.6);         // island
@@ -230,7 +326,8 @@ window.initOnyxScene = function (canvas) {
   at(cyl(0.26, 0.3, 0.5, dark), -7.4, 5.3, 1.6);           // plant
   cone(0.5, 1.3, 0x24402c).position.set(-7.4, 6.2, 1.6);
   at(box(11, 0.06, 0.06, 0x0e0f13, { emissive: 0xffc98a, emissiveIntensity: 1.0 }), -2.2, 7.95, 2.3); // cove light
-  warm(-4.2, 7.2, -1.5, 14, 12);
+  const lSuite = warm(-4.2, 7.2, -1.5, 14, 12);
+  lSuite.castShadow = true; lSuite.shadow.mapSize.set(512, 512); lSuite.shadow.bias = -0.01;
 
   /* ── pool + terrace life ── */
   scene.add(at(new THREE.Mesh(
@@ -249,6 +346,18 @@ window.initOnyxScene = function (canvas) {
   at(cyl(0.55, 0.65, 0.35, dark), -6.6, 0.6, 12.6);        // fire pit
   glow(0.18, 0xff9c52, -6.6, 0.85, 12.6);
   warm(-6.6, 1.4, 12.6, 7, 7, 0xff8c42);
+
+  /* ── light halos: the cheap-bloom pass ── */
+  halo(0, 1.2, 10.2, 11, 0x2fb6e0, 0.32);                   // pool glow
+  [3.7, 4.6, 5.5].forEach((x) => halo(x, 2.85, 0.6, 1.3, 0xffd9a0, 0.75));
+  halo(-6.9, 2.5, 3.0, 1.6, 0xffd9a0, 0.7);                 // floor lamp
+  [-5.7, -2.7].forEach((x) => halo(x, 5.65, -3.3, 1.2, 0xffd9a0, 0.7));
+  halo(-6.6, 0.95, 12.6, 2.6, 0xff8c42, 0.8);               // fire pit
+  for (let i = 0; i < 5; i++) halo(i % 2 ? 2.4 : -2.4, 0.7, 20 + i * 3.4, 0.9, 0xffc98a, 0.6);
+  halo(-2.9, 2.15, 33, 1.1, 0xffc98a, 0.6);
+  halo(2.9, 2.15, 33, 1.1, 0xffc98a, 0.6);
+  halo(-260, 320, -520, 110, 0xfff3d8, 0.45);               // moon halo
+  halo(-4.4, 2.4, -5.55, 4.2, 0xc6a15b, 0.28);              // artwork wash
 
   /* ── trees ── */
   const tree = (x, z, s) => {
