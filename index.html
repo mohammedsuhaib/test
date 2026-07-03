@@ -4,11 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Onyx Estates — Where Architecture Meets Aspiration</title>
-  <meta name="description" content="Onyx Estates is a boutique real estate house curating the world's most extraordinary homes. Discover villas, penthouses and residences beyond the ordinary." />
+  <meta name="description" content="Onyx Estates is a boutique real estate house curating the world's most extraordinary homes." />
+  <script>document.documentElement.classList.add('js')</script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◆</text></svg>" />
@@ -16,558 +17,228 @@
 <body>
 
   <!-- ══════════ Preloader ══════════ -->
-  <div class="preloader" id="preloader" aria-hidden="true">
-    <div class="preloader__inner">
-      <span class="preloader__mark">◆</span>
-      <span class="preloader__word">ONYX&nbsp;ESTATES</span>
-      <span class="preloader__count" id="preloaderCount">0</span>
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader__row">
+      <span class="loader__brand">ONYX ESTATES</span>
+      <span class="loader__num" id="loaderNum">00</span>
     </div>
-    <div class="preloader__curtain"></div>
   </div>
 
-  <!-- ══════════ Custom cursor ══════════ -->
-  <div class="cursor" id="cursorDot" aria-hidden="true"></div>
-  <div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
+  <!-- ══════════ Cursor ══════════ -->
+  <div class="cursor" id="cursor" aria-hidden="true"></div>
 
-  <!-- ══════════ Scroll progress ══════════ -->
-  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
-
-  <!-- ══════════ Navigation ══════════ -->
-  <header class="nav" id="nav">
-    <div class="nav__inner container">
-      <a href="#top" class="nav__logo" data-magnetic>
-        <span class="nav__logo-mark">◆</span> ONYX<span class="nav__logo-thin">&nbsp;ESTATES</span>
-      </a>
-      <nav class="nav__links" id="navLinks" aria-label="Primary">
-        <a href="#properties" class="nav__link">Residences</a>
-        <a href="#about" class="nav__link">The House</a>
-        <a href="#neighborhoods" class="nav__link">Destinations</a>
-        <a href="#team" class="nav__link">Advisors</a>
-        <a href="#contact" class="nav__link">Contact</a>
-      </nav>
-      <a href="#contact" class="btn btn--gold nav__cta" data-magnetic>
-        <span>Book a Viewing</span>
-      </a>
-      <button class="nav__burger" id="navBurger" aria-label="Open menu" aria-expanded="false">
-        <span></span><span></span>
-      </button>
-    </div>
+  <!-- ══════════ Nav ══════════ -->
+  <header class="nav" id="navBar">
+    <a href="#top" class="nav__logo" data-scroll-to="#top">◆ ONYX <span>ESTATES</span></a>
+    <button class="nav__menu-btn" id="menuBtn" aria-expanded="false" aria-controls="menuOverlay">
+      <span class="nav__menu-label">Menu</span>
+      <span class="nav__menu-lines"><i></i><i></i></span>
+    </button>
   </header>
 
-  <!-- ══════════ Mobile menu ══════════ -->
-  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
-    <nav class="mobile-menu__links" aria-label="Mobile">
-      <a href="#properties" style="--i:0">Residences</a>
-      <a href="#about" style="--i:1">The House</a>
-      <a href="#neighborhoods" style="--i:2">Destinations</a>
-      <a href="#team" style="--i:3">Advisors</a>
-      <a href="#contact" style="--i:4">Contact</a>
+  <!-- ══════════ Menu overlay ══════════ -->
+  <div class="menu" id="menuOverlay" aria-hidden="true">
+    <nav class="menu__links" aria-label="Primary">
+      <a href="#showcase" data-scroll-to="#showcase"><em>01</em>Signature Homes</a>
+      <a href="#gallery" data-scroll-to="#gallery"><em>02</em>The Collection</a>
+      <a href="#destinations" data-scroll-to="#destinations"><em>03</em>Destinations</a>
+      <a href="#contact" data-scroll-to="#contact"><em>04</em>Contact</a>
     </nav>
-    <p class="mobile-menu__foot">hello@onyxestates.com · +1 (310) 555-0188</p>
+    <div class="menu__foot">
+      <span>hello@onyxestates.com</span>
+      <span>Beverly Hills · New York · Miami</span>
+    </div>
   </div>
 
   <main id="top">
 
     <!-- ══════════ Hero ══════════ -->
-    <section class="hero">
-      <div class="hero__media" data-parallax="0.25">
-        <img class="hero__img" src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=2400&auto=format&fit=crop" alt="Modern luxury villa at dusk with warm interior lighting" />
-        <div class="hero__veil"></div>
+    <section class="hero" id="hero">
+      <div class="hero__media">
+        <img class="hero__img" src="https://images.unsplash.com/photo-1613490493576-7fde63acd811?q=80&w=2400&auto=format&fit=crop" alt="Modern luxury villa at dusk, glowing from within" />
       </div>
+      <div class="hero__veil"></div>
 
-      <div class="hero__content container">
-        <p class="hero__kicker anim-fade" style="--d:.9s">Boutique Real Estate House · Est. 2009</p>
-        <h1 class="hero__title">
-          <span class="line"><span class="line__inner" style="--d:1.0s">Where architecture</span></span>
-          <span class="line"><span class="line__inner line__inner--italic" style="--d:1.12s">meets aspiration.</span></span>
+      <div class="hero__body">
+        <p class="hero__eyebrow" data-hero-fade>Boutique Real Estate House — Est. 2009</p>
+        <h1 class="hero__title" aria-label="ONYX">
+          <span class="hero__word" data-split-chars>ONYX</span>
         </h1>
-        <p class="hero__sub anim-fade" style="--d:1.4s">
-          We curate the world's most extraordinary homes — villas, penthouses and
-          residences chosen for the way they make you feel the moment you step inside.
-        </p>
-        <div class="hero__actions anim-fade" style="--d:1.55s">
-          <a href="#properties" class="btn btn--gold" data-magnetic><span>Explore Residences</span></a>
-          <a href="#about" class="btn btn--ghost" data-magnetic><span>Our Story</span></a>
+        <div class="hero__row">
+          <p class="hero__estates" data-hero-fade><em>Estates</em></p>
+          <p class="hero__sub" data-hero-fade>Homes that hold their breath<br />until you arrive.</p>
         </div>
       </div>
 
-      <!-- Search panel -->
-      <div class="hero__search anim-fade" style="--d:1.75s">
-        <form class="search container" onsubmit="return false" aria-label="Property search">
-          <div class="search__field">
-            <label for="sLoc">Location</label>
-            <select id="sLoc">
-              <option>Anywhere</option><option>Beverly Hills</option><option>Manhattan</option>
-              <option>Miami Beach</option><option>Aspen</option><option>Palm Springs</option>
-            </select>
-          </div>
-          <div class="search__field">
-            <label for="sType">Property Type</label>
-            <select id="sType">
-              <option>All types</option><option>Villa</option><option>Penthouse</option>
-              <option>Apartment</option><option>House</option>
-            </select>
-          </div>
-          <div class="search__field">
-            <label for="sPrice">Price Range</label>
-            <select id="sPrice">
-              <option>Any price</option><option>$1M – $5M</option>
-              <option>$5M – $10M</option><option>$10M+</option>
-            </select>
-          </div>
-          <button class="btn btn--gold search__btn" data-magnetic type="submit"><span>Search</span></button>
-        </form>
+      <div class="hero__foot" data-hero-fade>
+        <span>Scroll</span>
+        <span class="hero__foot-line"></span>
+        <span>Selected residences, 2026</span>
       </div>
+    </section>
 
-      <div class="hero__scrollcue anim-fade" style="--d:2s" aria-hidden="true">
-        <span></span>
+    <!-- ══════════ Manifesto ══════════ -->
+    <section class="manifesto">
+      <div class="manifesto__pin">
+        <p class="manifesto__kicker">The Philosophy</p>
+        <p class="manifesto__text" id="manifestoText">
+          We believe a home is not found — it is felt. Onyx curates residences where
+          light, proportion and silence are treated as materials, and every doorway
+          is an argument for staying.
+        </p>
+      </div>
+    </section>
+
+    <!-- ══════════ Signature showcase (pinned) ══════════ -->
+    <section class="showcase" id="showcase">
+      <div class="showcase__stage">
+        <header class="showcase__head">
+          <span class="showcase__label">Signature Homes</span>
+          <span class="showcase__count"><span id="showcaseIndex">01</span> / 03</span>
+        </header>
+
+        <article class="slide is-first" data-slide>
+          <div class="slide__media"><img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2000&auto=format&fit=crop" alt="The Glasshouse Residence — villa and pool at dusk" /></div>
+          <div class="slide__info">
+            <h2 class="slide__name">The Glasshouse<br /><em>Residence</em></h2>
+            <div class="slide__meta">
+              <span>Beverly Hills, CA</span>
+              <span>6 bd · 8 ba · 11,200 sqft</span>
+              <span class="slide__price">$12,400,000</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="slide" data-slide>
+          <div class="slide__media"><img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=2000&auto=format&fit=crop" alt="Marina Skyline Penthouse overlooking the water" /></div>
+          <div class="slide__info">
+            <h2 class="slide__name">Marina Skyline<br /><em>Penthouse</em></h2>
+            <div class="slide__meta">
+              <span>Miami Beach, FL</span>
+              <span>4 bd · 5 ba · 6,800 sqft</span>
+              <span class="slide__price">$8,750,000</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="slide" data-slide>
+          <div class="slide__media"><img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2000&auto=format&fit=crop" alt="Cedar and Stone Retreat, an alpine estate" /></div>
+          <div class="slide__info">
+            <h2 class="slide__name">Cedar &amp; Stone<br /><em>Retreat</em></h2>
+            <div class="slide__meta">
+              <span>Aspen, CO</span>
+              <span>5 bd · 6 ba · 7,400 sqft</span>
+              <span class="slide__price">$6,900,000</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ══════════ Horizontal collection ══════════ -->
+    <section class="hgal" id="gallery">
+      <div class="hgal__stage">
+        <div class="hgal__head">
+          <h2 class="hgal__title">The <em>Collection</em></h2>
+          <p class="hgal__hint">Keep scrolling —</p>
+        </div>
+        <div class="hgal__track" id="hgalTrack">
+          <article class="hcard" data-skew>
+            <div class="hcard__media"><img src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200&auto=format&fit=crop" alt="The Meridian Loft, a light-filled city apartment" /></div>
+            <div class="hcard__body"><h3>The Meridian Loft</h3><p>Manhattan, NY</p><span>$3,250,000</span></div>
+          </article>
+          <article class="hcard" data-skew>
+            <div class="hcard__media"><img src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1200&auto=format&fit=crop" alt="Palm Court Estate, desert modern architecture" /></div>
+            <div class="hcard__body"><h3>Palm Court Estate</h3><p>Palm Springs, CA</p><span>$5,400,000</span></div>
+          </article>
+          <article class="hcard" data-skew>
+            <div class="hcard__media"><img src="https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=1200&auto=format&fit=crop" alt="Harbor Light House with panoramic bay views" /></div>
+            <div class="hcard__body"><h3>Harbor Light House</h3><p>Sausalito, CA</p><span>$4,150,000</span></div>
+          </article>
+          <article class="hcard" data-skew>
+            <div class="hcard__media"><img src="https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?q=80&w=1200&auto=format&fit=crop" alt="Villa with turquoise pool under palm trees" /></div>
+            <div class="hcard__body"><h3>The Amalfi Terrace</h3><p>Miami Beach, FL</p><span>$7,900,000</span></div>
+          </article>
+          <article class="hcard" data-skew>
+            <div class="hcard__media"><img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200&auto=format&fit=crop" alt="Sculptural double-height living room" /></div>
+            <div class="hcard__body"><h3>Noir Penthouse</h3><p>West Hollywood, CA</p><span>$9,300,000</span></div>
+          </article>
+          <div class="hcard hcard--cta">
+            <a href="#contact" data-scroll-to="#contact"><span>Request the<br />full portfolio</span><i>→</i></a>
+          </div>
+        </div>
+        <div class="hgal__progress"><span id="hgalBar"></span></div>
       </div>
     </section>
 
     <!-- ══════════ Stats ══════════ -->
     <section class="stats">
-      <div class="container stats__grid">
-        <div class="stat" data-reveal>
-          <span class="stat__num"><span data-counter="2.1" data-decimals="1">0</span>B</span>
-          <span class="stat__label">Dollars in closed sales</span>
-        </div>
-        <div class="stat" data-reveal style="--rd:.1s">
-          <span class="stat__num"><span data-counter="3400">0</span>+</span>
-          <span class="stat__label">Families placed in homes</span>
-        </div>
-        <div class="stat" data-reveal style="--rd:.2s">
-          <span class="stat__num"><span data-counter="98">0</span>%</span>
-          <span class="stat__label">Client satisfaction rate</span>
-        </div>
-        <div class="stat" data-reveal style="--rd:.3s">
-          <span class="stat__num"><span data-counter="27">0</span></span>
-          <span class="stat__label">International design awards</span>
-        </div>
+      <div class="stat"><span class="stat__num">$<i data-counter="2.1" data-decimals="1">0</i>B</span><span class="stat__label">in closed sales</span></div>
+      <div class="stat"><span class="stat__num"><i data-counter="3400">0</i>+</span><span class="stat__label">families placed</span></div>
+      <div class="stat"><span class="stat__num"><i data-counter="98">0</i>%</span><span class="stat__label">client satisfaction</span></div>
+      <div class="stat"><span class="stat__num"><i data-counter="27">0</i></span><span class="stat__label">design awards</span></div>
+    </section>
+
+    <!-- ══════════ Destinations ══════════ -->
+    <section class="dests" id="destinations">
+      <p class="dests__kicker">Destinations</p>
+
+      <div class="dest" data-dir="1">
+        <h2 class="dest__name">Beverly<span>Hills</span></h2>
+        <div class="dest__media"><img src="https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=1400&auto=format&fit=crop" alt="Beverly Hills estate behind manicured hedges" /></div>
+        <p class="dest__count">142 residences</p>
+      </div>
+
+      <div class="dest dest--alt" data-dir="-1">
+        <h2 class="dest__name">Man<span>hattan</span></h2>
+        <div class="dest__media"><img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=1400&auto=format&fit=crop" alt="Manhattan apartment with skyline view" /></div>
+        <p class="dest__count">96 residences</p>
+      </div>
+
+      <div class="dest" data-dir="1">
+        <h2 class="dest__name">Aspen<span>&nbsp;</span></h2>
+        <div class="dest__media"><img src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=1400&auto=format&fit=crop" alt="Aspen mountain home in the snow" /></div>
+        <p class="dest__count">54 residences</p>
       </div>
     </section>
 
-    <!-- ══════════ Marquee ══════════ -->
-    <div class="marquee" aria-hidden="true">
-      <div class="marquee__track">
-        <span>Beverly Hills ◆ Manhattan ◆ Miami Beach ◆ Aspen ◆ Palm Springs ◆ Sausalito ◆ Lake Como ◆ Saint-Tropez ◆&nbsp;</span>
-        <span>Beverly Hills ◆ Manhattan ◆ Miami Beach ◆ Aspen ◆ Palm Springs ◆ Sausalito ◆ Lake Como ◆ Saint-Tropez ◆&nbsp;</span>
-      </div>
-    </div>
-
-    <!-- ══════════ Properties ══════════ -->
-    <section class="section properties" id="properties">
-      <div class="container">
-        <div class="section__head">
-          <div>
-            <p class="section__kicker" data-reveal>Curated Portfolio</p>
-            <h2 class="section__title" data-reveal style="--rd:.08s">Residences of <em>distinction</em></h2>
-          </div>
-          <p class="section__lede" data-reveal style="--rd:.16s">
-            Every home in our portfolio is walked, vetted and photographed by our own
-            advisors. If it isn't remarkable, it isn't listed.
-          </p>
-        </div>
-
-        <div class="filters" data-reveal role="tablist" aria-label="Filter properties">
-          <button class="filter is-active" data-filter="all">All</button>
-          <button class="filter" data-filter="villa">Villas</button>
-          <button class="filter" data-filter="penthouse">Penthouses</button>
-          <button class="filter" data-filter="apartment">Apartments</button>
-          <button class="filter" data-filter="house">Houses</button>
-        </div>
-
-        <div class="cards" id="cardsGrid">
-
-          <article class="card" data-category="villa" data-reveal data-tilt>
-            <div class="card__media">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop" alt="The Glasshouse Residence — modern villa with pool at dusk" />
-              <span class="card__tag">Featured</span>
-              <button class="card__fav" aria-label="Save to favourites">♡</button>
-            </div>
-            <div class="card__body">
-              <div class="card__topline">
-                <span class="card__price">$12,400,000</span>
-                <span class="card__type">Villa</span>
-              </div>
-              <h3 class="card__name">The Glasshouse Residence</h3>
-              <p class="card__loc">◆ Beverly Hills, California</p>
-              <div class="card__meta">
-                <span>6 Beds</span><span>8 Baths</span><span>11,200 sqft</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="card" data-category="penthouse" data-reveal data-tilt style="--rd:.08s">
-            <div class="card__media">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop" alt="Marina Skyline Penthouse — glass residence overlooking the water" />
-              <span class="card__tag card__tag--new">New</span>
-              <button class="card__fav" aria-label="Save to favourites">♡</button>
-            </div>
-            <div class="card__body">
-              <div class="card__topline">
-                <span class="card__price">$8,750,000</span>
-                <span class="card__type">Penthouse</span>
-              </div>
-              <h3 class="card__name">Marina Skyline Penthouse</h3>
-              <p class="card__loc">◆ Miami Beach, Florida</p>
-              <div class="card__meta">
-                <span>4 Beds</span><span>5 Baths</span><span>6,800 sqft</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="card" data-category="villa" data-reveal data-tilt style="--rd:.16s">
-            <div class="card__media">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop" alt="Cedar and Stone Retreat — alpine estate with timber facade" />
-              <button class="card__fav" aria-label="Save to favourites">♡</button>
-            </div>
-            <div class="card__body">
-              <div class="card__topline">
-                <span class="card__price">$6,900,000</span>
-                <span class="card__type">Villa</span>
-              </div>
-              <h3 class="card__name">Cedar &amp; Stone Retreat</h3>
-              <p class="card__loc">◆ Aspen, Colorado</p>
-              <div class="card__meta">
-                <span>5 Beds</span><span>6 Baths</span><span>7,400 sqft</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="card" data-category="apartment" data-reveal data-tilt>
-            <div class="card__media">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200&auto=format&fit=crop" alt="The Meridian Loft — light-filled city apartment" />
-              <button class="card__fav" aria-label="Save to favourites">♡</button>
-            </div>
-            <div class="card__body">
-              <div class="card__topline">
-                <span class="card__price">$3,250,000</span>
-                <span class="card__type">Apartment</span>
-              </div>
-              <h3 class="card__name">The Meridian Loft</h3>
-              <p class="card__loc">◆ Manhattan, New York</p>
-              <div class="card__meta">
-                <span>2 Beds</span><span>3 Baths</span><span>2,900 sqft</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="card" data-category="villa" data-reveal data-tilt style="--rd:.08s">
-            <div class="card__media">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1200&auto=format&fit=crop" alt="Palm Court Estate — desert modern home with clean lines" />
-              <span class="card__tag">Featured</span>
-              <button class="card__fav" aria-label="Save to favourites">♡</button>
-            </div>
-            <div class="card__body">
-              <div class="card__topline">
-                <span class="card__price">$5,400,000</span>
-                <span class="card__type">Villa</span>
-              </div>
-              <h3 class="card__name">Palm Court Estate</h3>
-              <p class="card__loc">◆ Palm Springs, California</p>
-              <div class="card__meta">
-                <span>4 Beds</span><span>5 Baths</span><span>6,100 sqft</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="card" data-category="house" data-reveal data-tilt style="--rd:.16s">
-            <div class="card__media">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=1200&auto=format&fit=crop" alt="Harbor Light House — coastal home with panoramic bay views" />
-              <span class="card__tag card__tag--new">New</span>
-              <button class="card__fav" aria-label="Save to favourites">♡</button>
-            </div>
-            <div class="card__body">
-              <div class="card__topline">
-                <span class="card__price">$4,150,000</span>
-                <span class="card__type">House</span>
-              </div>
-              <h3 class="card__name">Harbor Light House</h3>
-              <p class="card__loc">◆ Sausalito, California</p>
-              <div class="card__meta">
-                <span>3 Beds</span><span>4 Baths</span><span>3,800 sqft</span>
-              </div>
-            </div>
-          </article>
-
-        </div>
-
-        <div class="properties__more" data-reveal>
-          <a href="#contact" class="btn btn--dark" data-magnetic><span>Request the Full Portfolio</span></a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════ About ══════════ -->
-    <section class="section about" id="about">
-      <div class="container about__grid">
-        <div class="about__media" data-reveal>
-          <div class="about__img-wrap" data-parallax="0.12">
-            <img loading="lazy" src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1400&auto=format&fit=crop" alt="Sunlit double-height living room with sculptural staircase" />
-          </div>
-          <div class="about__badge" data-reveal style="--rd:.3s">
-            <span class="about__badge-num">17</span>
-            <span class="about__badge-txt">Years of quiet excellence</span>
-          </div>
-        </div>
-        <div class="about__copy">
-          <p class="section__kicker" data-reveal>The House</p>
-          <h2 class="section__title" data-reveal style="--rd:.08s">We don't sell square footage. <em>We place lives.</em></h2>
-          <p data-reveal style="--rd:.16s">
-            Onyx Estates was founded on a simple refusal: that finding a home should ever
-            feel transactional. Seventeen years later, we remain deliberately small — a
-            house of twelve advisors, each carrying a portfolio they know street by
-            street, door by door.
-          </p>
-          <ul class="about__list">
-            <li data-reveal style="--rd:.22s">
-              <span class="about__list-mark">01</span>
-              <div><strong>Private, off-market access</strong><p>Over half our placements never reach a public listing. Our clients see them first.</p></div>
-            </li>
-            <li data-reveal style="--rd:.3s">
-              <span class="about__list-mark">02</span>
-              <div><strong>One advisor, start to finish</strong><p>No hand-offs, no call centres. The person who opens the first door signs the last page with you.</p></div>
-            </li>
-            <li data-reveal style="--rd:.38s">
-              <span class="about__list-mark">03</span>
-              <div><strong>Architecture-first curation</strong><p>We walk every property before we list it. Light, proportion and craft are non-negotiable.</p></div>
-            </li>
-          </ul>
-          <a href="#team" class="btn btn--dark" data-reveal data-magnetic style="--rd:.46s"><span>Meet the Advisors</span></a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════ Neighborhoods ══════════ -->
-    <section class="section hoods" id="neighborhoods">
-      <div class="container">
-        <div class="section__head">
-          <div>
-            <p class="section__kicker" data-reveal>Destinations</p>
-            <h2 class="section__title" data-reveal style="--rd:.08s">Places worth <em>belonging to</em></h2>
-          </div>
-          <p class="section__lede" data-reveal style="--rd:.16s">
-            Four flagship markets, each with a dedicated advisory desk and a portfolio
-            of homes you won't find anywhere else.
-          </p>
-        </div>
-        <div class="hoods__grid">
-          <a href="#contact" class="hood" data-reveal>
-            <img loading="lazy" src="https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?q=80&w=1000&auto=format&fit=crop" alt="Beverly Hills estate behind manicured hedges" />
-            <div class="hood__overlay">
-              <h3>Beverly Hills</h3>
-              <p>142 residences</p>
-              <span class="hood__arrow">→</span>
-            </div>
-          </a>
-          <a href="#contact" class="hood" data-reveal style="--rd:.08s">
-            <img loading="lazy" src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=1000&auto=format&fit=crop" alt="Manhattan apartment interior with skyline view" />
-            <div class="hood__overlay">
-              <h3>Manhattan</h3>
-              <p>96 residences</p>
-              <span class="hood__arrow">→</span>
-            </div>
-          </a>
-          <a href="#contact" class="hood" data-reveal style="--rd:.16s">
-            <img loading="lazy" src="https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?q=80&w=1000&auto=format&fit=crop" alt="Miami Beach villa with turquoise pool" />
-            <div class="hood__overlay">
-              <h3>Miami Beach</h3>
-              <p>78 residences</p>
-              <span class="hood__arrow">→</span>
-            </div>
-          </a>
-          <a href="#contact" class="hood" data-reveal style="--rd:.24s">
-            <img loading="lazy" src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?q=80&w=1000&auto=format&fit=crop" alt="Aspen mountain home in the snow" />
-            <div class="hood__overlay">
-              <h3>Aspen</h3>
-              <p>54 residences</p>
-              <span class="hood__arrow">→</span>
-            </div>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════ Process ══════════ -->
-    <section class="section process">
-      <div class="container">
-        <div class="section__head">
-          <div>
-            <p class="section__kicker" data-reveal>The Journey</p>
-            <h2 class="section__title" data-reveal style="--rd:.08s">Four steps. <em>Zero friction.</em></h2>
-          </div>
-        </div>
-        <div class="process__grid">
-          <div class="step" data-reveal>
-            <span class="step__num">01</span>
-            <h3>Discover</h3>
-            <p>A private consultation to understand how you live — then a shortlist drawn from listed and off-market homes.</p>
-          </div>
-          <div class="step" data-reveal style="--rd:.1s">
-            <span class="step__num">02</span>
-            <h3>Experience</h3>
-            <p>Unhurried private viewings, at golden hour if you like. We believe a home should be met, not toured.</p>
-          </div>
-          <div class="step" data-reveal style="--rd:.2s">
-            <span class="step__num">03</span>
-            <h3>Secure</h3>
-            <p>Negotiation, diligence and paperwork handled by your advisor and our in-house counsel. You stay informed, never burdened.</p>
-          </div>
-          <div class="step" data-reveal style="--rd:.3s">
-            <span class="step__num">04</span>
-            <h3>Arrive</h3>
-            <p>Keys in hand — plus introductions to architects, designers and staff who can make the house entirely yours.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════ Testimonials ══════════ -->
-    <section class="section quotes">
-      <div class="container">
-        <p class="section__kicker section__kicker--center" data-reveal>Client Words</p>
-        <div class="quotes__slider" data-reveal style="--rd:.1s">
-          <div class="quotes__track" id="quotesTrack">
-            <blockquote class="quote">
-              <p>“Our advisor found us a house that had never been listed — and negotiated it while we were still on the plane home. I've never seen service like it, in any industry.”</p>
-              <footer><strong>Amara &amp; David Chen</strong><span>The Glasshouse Residence, Beverly Hills</span></footer>
-            </blockquote>
-            <blockquote class="quote">
-              <p>“They said no to showing us three homes because ‘the light was wrong for how you live.’ That's when we knew we were in the right hands.”</p>
-              <footer><strong>Isabella Fontaine</strong><span>Marina Skyline Penthouse, Miami Beach</span></footer>
-            </blockquote>
-            <blockquote class="quote">
-              <p>“From first call to keys: forty-one days, one advisor, zero stress. Onyx made the largest purchase of our lives feel like the easiest.”</p>
-              <footer><strong>Marcus Oyelaran</strong><span>Harbor Light House, Sausalito</span></footer>
-            </blockquote>
-          </div>
-          <div class="quotes__nav">
-            <button id="quotePrev" aria-label="Previous testimonial">←</button>
-            <div class="quotes__dots" id="quoteDots"></div>
-            <button id="quoteNext" aria-label="Next testimonial">→</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════ Team ══════════ -->
-    <section class="section team" id="team">
-      <div class="container">
-        <div class="section__head">
-          <div>
-            <p class="section__kicker" data-reveal>Advisors</p>
-            <h2 class="section__title" data-reveal style="--rd:.08s">The people behind <em>the doors</em></h2>
-          </div>
-        </div>
-        <div class="team__grid">
-          <div class="member" data-reveal>
-            <div class="member__photo">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800&auto=format&fit=crop" alt="Portrait of Eleanor Voss" />
-            </div>
-            <h3>Eleanor Voss</h3>
-            <p>Founding Partner · Beverly Hills</p>
-          </div>
-          <div class="member" data-reveal style="--rd:.1s">
-            <div class="member__photo">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=800&auto=format&fit=crop" alt="Portrait of Julian Marsh" />
-            </div>
-            <h3>Julian Marsh</h3>
-            <p>Senior Advisor · Manhattan</p>
-          </div>
-          <div class="member" data-reveal style="--rd:.2s">
-            <div class="member__photo">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=800&auto=format&fit=crop" alt="Portrait of Sofia Reyes" />
-            </div>
-            <h3>Sofia Reyes</h3>
-            <p>Senior Advisor · Miami Beach</p>
-          </div>
-          <div class="member" data-reveal style="--rd:.3s">
-            <div class="member__photo">
-              <img loading="lazy" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=800&auto=format&fit=crop" alt="Portrait of Theo Lindqvist" />
-            </div>
-            <h3>Theo Lindqvist</h3>
-            <p>Advisor · Aspen</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════ CTA ══════════ -->
-    <section class="cta" id="contact">
-      <div class="cta__media" data-parallax="0.18">
-        <img loading="lazy" src="https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?q=80&w=2000&auto=format&fit=crop" alt="Serene bedroom interior in warm evening light" />
-        <div class="cta__veil"></div>
-      </div>
-      <div class="container cta__inner">
-        <div class="cta__copy">
-          <p class="section__kicker section__kicker--light" data-reveal>Begin the Conversation</p>
-          <h2 class="cta__title" data-reveal style="--rd:.08s">Your next chapter has <em>an address.</em></h2>
-          <p class="cta__sub" data-reveal style="--rd:.16s">
-            Tell us a little about how you want to live. An advisor will reply within
-            one business day — usually sooner.
-          </p>
-          <div class="cta__contacts" data-reveal style="--rd:.24s">
-            <a href="tel:+13105550188">+1 (310) 555-0188</a>
-            <a href="mailto:hello@onyxestates.com">hello@onyxestates.com</a>
-          </div>
-        </div>
-        <form class="cta__form" data-reveal style="--rd:.2s" id="contactForm">
-          <div class="field">
-            <input type="text" id="fName" required placeholder=" " />
-            <label for="fName">Full name</label>
-          </div>
-          <div class="field">
-            <input type="email" id="fEmail" required placeholder=" " />
-            <label for="fEmail">Email address</label>
-          </div>
-          <div class="field">
-            <textarea id="fMsg" rows="4" required placeholder=" "></textarea>
-            <label for="fMsg">What are you looking for?</label>
-          </div>
-          <button class="btn btn--gold btn--full" data-magnetic type="submit"><span>Start the Conversation</span></button>
-          <p class="cta__form-note" id="formNote" role="status"></p>
-        </form>
-      </div>
+    <!-- ══════════ Quote ══════════ -->
+    <section class="quote">
+      <p class="quote__mark">“</p>
+      <blockquote class="quote__text" id="quoteText">
+        They said no to showing us three homes because the light was wrong
+        for how we live. That's when we knew we were in the right hands.
+      </blockquote>
+      <p class="quote__by">Isabella Fontaine — Marina Skyline Penthouse</p>
     </section>
 
   </main>
 
-  <!-- ══════════ Footer ══════════ -->
-  <footer class="footer">
-    <div class="container footer__grid">
-      <div class="footer__brand">
-        <a href="#top" class="nav__logo"><span class="nav__logo-mark">◆</span> ONYX<span class="nav__logo-thin">&nbsp;ESTATES</span></a>
-        <p>A boutique real estate house curating extraordinary homes in the world's most coveted places.</p>
-      </div>
-      <div class="footer__col">
-        <h4>Explore</h4>
-        <a href="#properties">Residences</a>
-        <a href="#neighborhoods">Destinations</a>
-        <a href="#about">The House</a>
-        <a href="#team">Advisors</a>
-      </div>
-      <div class="footer__col">
-        <h4>Offices</h4>
-        <span>9601 Wilshire Blvd, Beverly Hills</span>
-        <span>21 E 61st St, New York</span>
-        <span>1111 Lincoln Rd, Miami Beach</span>
-      </div>
-      <div class="footer__col">
-        <h4>Follow</h4>
-        <a href="#top">Instagram</a>
-        <a href="#top">LinkedIn</a>
-        <a href="#top">Pinterest</a>
+  <!-- ══════════ Footer / CTA ══════════ -->
+  <footer class="footer" id="contact">
+    <div class="footer__marquee" aria-hidden="true">
+      <div class="footer__marquee-track">
+        <span>Begin the conversation ◆ Begin the conversation ◆ Begin the conversation ◆&nbsp;</span>
+        <span>Begin the conversation ◆ Begin the conversation ◆ Begin the conversation ◆&nbsp;</span>
       </div>
     </div>
-    <div class="container footer__bar">
-      <span>© 2026 Onyx Estates. All rights reserved.</span>
-      <span>Crafted with intention.</span>
+
+    <div class="footer__cta">
+      <p class="footer__lead">Your next chapter has an address.</p>
+      <a class="footer__mail" id="magnetMail" href="mailto:hello@onyxestates.com">hello@<em>onyxestates</em>.com</a>
+      <p class="footer__tel"><a href="tel:+13105550188">+1 (310) 555-0188</a></p>
+    </div>
+
+    <div class="footer__bar">
+      <span>© 2026 Onyx Estates</span>
+      <span>Beverly Hills · New York · Miami · Aspen</span>
+      <span>Instagram — LinkedIn</span>
     </div>
   </footer>
 
-  <!-- ══════════ Back to top ══════════ -->
-  <button class="totop" id="toTop" aria-label="Back to top">↑</button>
-
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
