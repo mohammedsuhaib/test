@@ -71,9 +71,10 @@
     });
   }
 
-  /* ── preloader → hero intro ── */
-  const heroChars = splitChars($(".hero__word"));
+  /* ── preloader → orbit intro ── */
+  const heroChars = splitChars($(".journey__word"));
   gsap.set(heroChars, { yPercent: 115, rotate: 4 });
+  gsap.set(".jlayer:first-child", { scale: 1.12 });
 
   const counter = { v: 0 };
   const loaderNum = $("#loaderNum");
@@ -88,23 +89,61 @@
     })
     .to("#loader", { yPercent: -100, duration: 0.9, ease: "power4.inOut" }, "+=0.15")
     .set("#loader", { display: "none" })
-    .to(".hero__img", { scale: 1, duration: 2.2, ease: "power2.out" }, "-=0.9")
+    .to(".jlayer:first-child", { scale: 1, duration: 2.4, ease: "power2.out" }, "-=0.9")
     .to(heroChars, { yPercent: 0, rotate: 0, duration: 1.3, ease: "expo.out", stagger: 0.055 }, "<+0.1")
-    .to("[data-hero-fade]", { opacity: 1, duration: 1.1, ease: "power2.out", stagger: 0.12 }, "-=0.8")
+    .to("[data-j-fade]", { opacity: 1, duration: 1.1, ease: "power2.out", stagger: 0.12 }, "-=0.8")
     .to(".nav", { opacity: 1, duration: 0.8 }, "<");
 
-  /* ── hero scroll parallax ── */
-  gsap.to(".hero__media", {
-    yPercent: 16,
-    ease: "none",
-    scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
+  /* ── the descent: orbit → city → residence → room by room ──
+     Each layer zooms toward the viewer and dissolves, revealing the
+     next scene already growing — one continuous dive. */
+  const layers = $$(".jlayer");
+  const stageEl = $("#jStage");
+  const altEl = $("#jAlt");
+  let jIndex = 0;
+
+  layers.forEach((l, i) => {
+    if (i) {
+      gsap.set(l, { autoAlpha: 0 });
+      gsap.set($("img", l), { scale: 0.82 });
+    }
   });
-  gsap.to(".hero__body", {
-    yPercent: -12,
-    opacity: 0.25,
-    ease: "none",
-    scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom 35%", scrub: true },
+
+  const journeyTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: ".journey",
+      start: "top top",
+      end: "+=" + (layers.length - 1) * 90 + "%",
+      pin: ".journey__stage",
+      scrub: 0.5,
+      onUpdate(self) {
+        gsap.set("#jBar", { scaleX: self.progress });
+        const i = Math.min(layers.length - 1, Math.round(self.progress * (layers.length - 1)));
+        if (i !== jIndex) {
+          jIndex = i;
+          stageEl.textContent = layers[i].dataset.stage;
+          altEl.textContent = layers[i].dataset.alt;
+          gsap.fromTo([stageEl, altEl], { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out", overwrite: true });
+        }
+      },
+    },
   });
+
+  journeyTl.to(".journey__title", { autoAlpha: 0, yPercent: -14, duration: 0.45, ease: "none" }, 0);
+
+  layers.forEach((layer, i) => {
+    if (i === layers.length - 1) return;
+    const next = layers[i + 1];
+    const t = i;
+    journeyTl
+      .to($("img", layer), { scale: 2.7, duration: 1, ease: "power1.in" }, t)
+      .fromTo($("img", layer), { filter: "blur(0px)" }, { filter: "blur(9px)", duration: 0.38, ease: "none" }, t + 0.62)
+      .to(layer, { autoAlpha: 0, duration: 0.3, ease: "none" }, t + 0.68)
+      .fromTo(next, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.32, ease: "none" }, t + 0.63)
+      .to($("img", next), { scale: 1, duration: 0.37, ease: "none" }, t + 0.63);
+  });
+  /* settle: the last room breathes slightly at the end of the dive */
+  journeyTl.to($("img", layers[layers.length - 1]), { scale: 1.06, duration: 0.6, ease: "none" });
 
   /* ── manifesto: word-by-word ink-in while pinned ── */
   const manifestoWords = splitWords($("#manifestoText"));
