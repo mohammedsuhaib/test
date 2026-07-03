@@ -56,32 +56,33 @@
     <!-- ══════════ The Descent (orbit → interior) ══════════ -->
     <section class="journey" id="journey">
       <div class="journey__stage">
+        <canvas class="journey__canvas" id="journeyCanvas" aria-hidden="true"></canvas>
         <div class="jlayer" data-stage="Low Earth Orbit" data-alt="400 KM">
-          <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2400&auto=format&fit=crop" alt="Earth seen from orbit, city lights glowing below" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2400&auto=format&fit=crop" alt="Earth seen from orbit, city lights glowing below" />
         </div>
         <div class="jlayer" data-stage="Above the City" data-alt="12 KM">
-          <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2400&auto=format&fit=crop" alt="Night aerial view over the city skyline" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?q=80&w=2400&auto=format&fit=crop" alt="Night aerial view over the city skyline" />
         </div>
         <div class="jlayer" data-stage="Street Level" data-alt="30 M">
-          <img src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=2400&auto=format&fit=crop" alt="Down among the city streets" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=2400&auto=format&fit=crop" alt="Down among the city streets" />
         </div>
         <div class="jlayer" data-stage="The Residence" data-alt="0 M">
-          <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2400&auto=format&fit=crop" alt="The residence at dusk, pool glowing" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2400&auto=format&fit=crop" alt="The residence at dusk, pool glowing" />
         </div>
         <div class="jlayer" data-stage="The Entry Hall" data-alt="Ground Floor">
-          <img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2400&auto=format&fit=crop" alt="Double-height entry hall washed in sunlight" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=2400&auto=format&fit=crop" alt="Double-height entry hall washed in sunlight" />
         </div>
         <div class="jlayer" data-stage="The Living Room" data-alt="Ground Floor">
-          <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2400&auto=format&fit=crop" alt="The living room, low light and warm wood" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=2400&auto=format&fit=crop" alt="The living room, low light and warm wood" />
         </div>
         <div class="jlayer" data-stage="The Kitchen" data-alt="Ground Floor">
-          <img src="https://images.unsplash.com/photo-1556911220-bff31c812dba?q=80&w=2400&auto=format&fit=crop" alt="The kitchen in dark timber and stone" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1556911220-bff31c812dba?q=80&w=2400&auto=format&fit=crop" alt="The kitchen in dark timber and stone" />
         </div>
         <div class="jlayer" data-stage="The Master Suite" data-alt="First Floor">
-          <img src="https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?q=80&w=2400&auto=format&fit=crop" alt="The master suite in warm evening light" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?q=80&w=2400&auto=format&fit=crop" alt="The master suite in warm evening light" />
         </div>
         <div class="jlayer" data-stage="The Pool Terrace" data-alt="Garden Level">
-          <img src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=2400&auto=format&fit=crop" alt="The pool terrace at golden hour" />
+          <img loading="lazy" src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?q=80&w=2400&auto=format&fit=crop" alt="The pool terrace at golden hour" />
         </div>
 
         <div class="journey__veil"></div>
@@ -264,6 +265,8 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="js/scene.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
