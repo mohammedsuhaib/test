@@ -133,6 +133,16 @@ html.reduced .menu { transition: clip-path 0.5s ease; }
   position: relative; height: 100svh; overflow: hidden;
   background: var(--ink);
 }
+.journey__canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  display: block;
+}
+html:not(.webgl) .journey__canvas { display: none; }
+html.webgl .jlayer { display: none; }
+html.webgl .journey__veil {
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(6, 7, 12, 0.5) 100%);
+}
 .jlayer { position: absolute; inset: 0; }
 .jlayer img {
   width: 100%; height: 100%; object-fit: cover;
