@@ -1,298 +1,350 @@
-/* ═══════════════════════════════════════════════════════════
-   ONYX ESTATES — main.js
-   Preloader · cursor · nav · reveals · counters · tilt ·
-   filters · slider · parallax · magnetic buttons · form
-   ═══════════════════════════════════════════════════════════ */
-
+/* ════════════════════════════════════════════════
+   ONYX ESTATES — scroll cinema
+   GSAP + ScrollTrigger + Lenis
+   ════════════════════════════════════════════════ */
 (() => {
-  "use strict";
+  const doc = document.documentElement;
+  const $ = (s, c = document) => c.querySelector(s);
+  const $$ = (s, c = document) => [...c.querySelectorAll(s)];
 
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const isTouch = window.matchMedia("(hover: none)").matches;
+  const reduced =
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    typeof gsap === "undefined" ||
+    typeof ScrollTrigger === "undefined";
 
-  /* ─────────── Preloader ─────────── */
-  const preloader = document.getElementById("preloader");
-  const preloaderCount = document.getElementById("preloaderCount");
-
-  const finishPreload = () => {
-    preloader.classList.add("is-done");
-    document.body.classList.add("is-loaded");
-  };
-
-  if (reduceMotion) {
-    finishPreload();
-  } else {
-    let progress = 0;
-    const tick = () => {
-      progress = Math.min(progress + Math.random() * 22 + 6, 100);
-      preloaderCount.textContent = String(Math.floor(progress)).padStart(2, "0");
-      if (progress < 100) {
-        setTimeout(tick, 110);
-      } else {
-        setTimeout(finishPreload, 250);
-      }
-    };
-    tick();
+  /* ── graceful bail: no animation stack → static, readable site ── */
+  if (reduced) {
+    doc.classList.add("reduced");
+    const loader = $("#loader");
+    if (loader) loader.remove();
+    $$("[data-counter]").forEach((el) => {
+      el.textContent = el.dataset.counter;
+    });
+    wireMenu(null);
+    return;
   }
 
-  /* ─────────── Custom cursor ─────────── */
-  if (!isTouch && !reduceMotion) {
-    const dot = document.getElementById("cursorDot");
-    const ring = document.getElementById("cursorRing");
-    let mx = -100, my = -100, rx = -100, ry = -100;
+  gsap.registerPlugin(ScrollTrigger);
 
-    window.addEventListener("mousemove", (e) => { mx = e.clientX; my = e.clientY; }, { passive: true });
+  /* ── smooth scroll ── */
+  const lenis = new Lenis({ duration: 1.15, smoothWheel: true });
+  lenis.on("scroll", ScrollTrigger.update);
+  gsap.ticker.add((t) => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
 
-    const renderCursor = () => {
-      dot.style.transform = `translate(${mx}px, ${my}px)`;
-      rx += (mx - rx) * 0.16;
-      ry += (my - ry) * 0.16;
-      ring.style.transform = `translate(${rx}px, ${ry}px)`;
-      requestAnimationFrame(renderCursor);
-    };
-    renderCursor();
+  /* ── text splitters ── */
+  function splitChars(el) {
+    const text = el.textContent;
+    el.setAttribute("aria-hidden", "true");
+    el.textContent = "";
+    [...text].forEach((ch) => {
+      const s = document.createElement("span");
+      s.className = "ch";
+      s.textContent = ch === " " ? " " : ch;
+      el.appendChild(s);
+    });
+    return $$(".ch", el);
+  }
+  function splitWords(el) {
+    const text = el.textContent.trim().replace(/\s+/g, " ");
+    el.setAttribute("aria-label", text);
+    el.textContent = "";
+    text.split(" ").forEach((w, i) => {
+      if (i) el.appendChild(document.createTextNode(" "));
+      const s = document.createElement("span");
+      s.className = "w";
+      s.textContent = w;
+      el.appendChild(s);
+    });
+    return $$(".w", el);
+  }
 
-    document.querySelectorAll("a, button, select, input, textarea, .card").forEach((el) => {
-      el.addEventListener("mouseenter", () => ring.classList.add("is-hover"));
-      el.addEventListener("mouseleave", () => ring.classList.remove("is-hover"));
+  /* ── cursor ── */
+  const cursor = $("#cursor");
+  if (cursor && window.matchMedia("(hover: hover)").matches) {
+    window.addEventListener("mousemove", (e) => {
+      gsap.to(cursor, { x: e.clientX - 6, y: e.clientY - 6, duration: 0.35, ease: "power3.out" });
+    });
+    $$("a, button").forEach((el) => {
+      el.addEventListener("mouseenter", () => cursor.classList.add("is-grow"));
+      el.addEventListener("mouseleave", () => cursor.classList.remove("is-grow"));
     });
   }
 
-  /* ─────────── Nav: solid on scroll, hide on scroll down ─────────── */
-  const nav = document.getElementById("nav");
-  const progressBar = document.getElementById("scrollProgress");
-  const toTop = document.getElementById("toTop");
-  let lastY = 0;
+  /* ── preloader → hero intro ── */
+  const heroChars = splitChars($(".hero__word"));
+  gsap.set(heroChars, { yPercent: 115, rotate: 4 });
 
-  const onScroll = () => {
-    const y = window.scrollY;
-    nav.classList.toggle("is-solid", y > 60);
-    nav.classList.toggle("is-hidden", y > 500 && y > lastY);
-    toTop.classList.toggle("is-visible", y > 900);
-    lastY = y;
+  const counter = { v: 0 };
+  const loaderNum = $("#loaderNum");
+  const intro = gsap.timeline();
 
-    const max = document.documentElement.scrollHeight - window.innerHeight;
-    progressBar.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
-  };
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
+  intro
+    .to(counter, {
+      v: 100,
+      duration: 1.5,
+      ease: "power2.inOut",
+      onUpdate: () => (loaderNum.textContent = String(Math.round(counter.v)).padStart(2, "0")),
+    })
+    .to("#loader", { yPercent: -100, duration: 0.9, ease: "power4.inOut" }, "+=0.15")
+    .set("#loader", { display: "none" })
+    .to(".hero__img", { scale: 1, duration: 2.2, ease: "power2.out" }, "-=0.9")
+    .to(heroChars, { yPercent: 0, rotate: 0, duration: 1.3, ease: "expo.out", stagger: 0.055 }, "<+0.1")
+    .to("[data-hero-fade]", { opacity: 1, duration: 1.1, ease: "power2.out", stagger: 0.12 }, "-=0.8")
+    .to(".nav", { opacity: 1, duration: 0.8 }, "<");
 
-  toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }));
-
-  /* ─────────── Mobile menu ─────────── */
-  const burger = document.getElementById("navBurger");
-  const mobileMenu = document.getElementById("mobileMenu");
-
-  const setMenu = (open) => {
-    burger.classList.toggle("is-open", open);
-    burger.setAttribute("aria-expanded", String(open));
-    mobileMenu.classList.toggle("is-open", open);
-    mobileMenu.setAttribute("aria-hidden", String(!open));
-    document.body.style.overflow = open ? "hidden" : "";
-  };
-  burger.addEventListener("click", () => setMenu(!mobileMenu.classList.contains("is-open")));
-  mobileMenu.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => setMenu(false)));
-
-  /* ─────────── Reveal on scroll ─────────── */
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("is-in");
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.12, rootMargin: "0px 0px -40px 0px" });
-
-  document.querySelectorAll("[data-reveal]").forEach((el) => revealObserver.observe(el));
-
-  /* ─────────── Animated counters ─────────── */
-  const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
-
-  const runCounter = (el) => {
-    const target = parseFloat(el.dataset.counter);
-    const decimals = parseInt(el.dataset.decimals || "0", 10);
-    const duration = 1800;
-    let start = null;
-
-    const frame = (ts) => {
-      if (start === null) start = ts;
-      const t = Math.min((ts - start) / duration, 1);
-      const val = target * easeOutQuart(t);
-      el.textContent = val.toLocaleString("en-US", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      });
-      if (t < 1) requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
-  };
-
-  const counterObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        runCounter(entry.target);
-        counterObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.6 });
-
-  document.querySelectorAll("[data-counter]").forEach((el) => {
-    if (reduceMotion) {
-      const d = parseInt(el.dataset.decimals || "0", 10);
-      el.textContent = parseFloat(el.dataset.counter).toLocaleString("en-US", {
-        minimumFractionDigits: d, maximumFractionDigits: d,
-      });
-    } else {
-      counterObserver.observe(el);
-    }
+  /* ── hero scroll parallax ── */
+  gsap.to(".hero__media", {
+    yPercent: 16,
+    ease: "none",
+    scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
+  });
+  gsap.to(".hero__body", {
+    yPercent: -12,
+    opacity: 0.25,
+    ease: "none",
+    scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom 35%", scrub: true },
   });
 
-  /* ─────────── Parallax media ─────────── */
-  if (!reduceMotion) {
-    const parallaxEls = [...document.querySelectorAll("[data-parallax]")];
-    if (parallaxEls.length) {
-      let ticking = false;
-      const applyParallax = () => {
-        parallaxEls.forEach((el) => {
-          const rect = el.parentElement.getBoundingClientRect();
-          if (rect.bottom < 0 || rect.top > window.innerHeight) return;
-          const speed = parseFloat(el.dataset.parallax);
-          const center = rect.top + rect.height / 2 - window.innerHeight / 2;
-          el.style.transform = `translateY(${center * -speed}px)`;
-        });
-        ticking = false;
-      };
-      window.addEventListener("scroll", () => {
-        if (!ticking) { requestAnimationFrame(applyParallax); ticking = true; }
-      }, { passive: true });
-      applyParallax();
-    }
-  }
+  /* ── manifesto: word-by-word ink-in while pinned ── */
+  const manifestoWords = splitWords($("#manifestoText"));
+  gsap.set(manifestoWords, { opacity: 0.12 });
+  gsap.to(manifestoWords, {
+    opacity: 1,
+    stagger: 0.4,
+    ease: "none",
+    scrollTrigger: {
+      trigger: ".manifesto",
+      start: "top top",
+      end: "+=130%",
+      pin: ".manifesto__pin",
+      scrub: 0.4,
+    },
+  });
 
-  /* ─────────── 3D tilt on property cards ─────────── */
-  if (!isTouch && !reduceMotion) {
-    document.querySelectorAll("[data-tilt]").forEach((card) => {
-      card.addEventListener("mousemove", (e) => {
-        const rect = card.getBoundingClientRect();
-        const px = (e.clientX - rect.left) / rect.width - 0.5;
-        const py = (e.clientY - rect.top) / rect.height - 0.5;
-        card.style.transform = `perspective(900px) rotateY(${px * 6}deg) rotateX(${py * -6}deg) translateY(-4px)`;
-        card.style.transition = "box-shadow .5s";
-      });
-      card.addEventListener("mouseleave", () => {
-        card.style.transform = "";
-        card.style.transition = "";
+  /* ── showcase: pinned full-screen property reveals ── */
+  const slides = $$("[data-slide]");
+  const indexEl = $("#showcaseIndex");
+  slides.forEach((s, i) => {
+    if (i) gsap.set(s, { clipPath: "inset(100% 0 0 0)" });
+    gsap.set($(".slide__media img", s), i ? { yPercent: -14, scale: 1.08 } : { scale: 1.0 });
+  });
+
+  const showTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: ".showcase",
+      start: "top top",
+      end: "+=" + slides.length * 90 + "%",
+      pin: ".showcase__stage",
+      scrub: 0.5,
+      onUpdate(self) {
+        const i = Math.min(slides.length - 1, Math.floor(self.progress * slides.length));
+        indexEl.textContent = String(i + 1).padStart(2, "0");
+      },
+    },
+  });
+
+  slides.forEach((slide, i) => {
+    if (!i) return;
+    const prev = slides[i - 1];
+    showTl
+      .to($(".slide__info", prev), { yPercent: -30, opacity: 0, duration: 0.5, ease: "none" })
+      .to(slide, { clipPath: "inset(0% 0 0 0)", duration: 1, ease: "none" }, "<")
+      .to($(".slide__media img", slide), { yPercent: 0, scale: 1, duration: 1, ease: "none" }, "<")
+      .fromTo(
+        $(".slide__info", slide),
+        { yPercent: 25, opacity: 0 },
+        { yPercent: 0, opacity: 1, duration: 0.5, ease: "none" },
+        "-=0.35"
+      );
+  });
+
+  /* ── horizontal collection ── */
+  const track = $("#hgalTrack");
+  const dist = () => Math.max(0, track.scrollWidth - window.innerWidth);
+  gsap.to(track, {
+    x: () => -dist(),
+    ease: "none",
+    scrollTrigger: {
+      trigger: ".hgal",
+      start: "top top",
+      end: () => "+=" + dist(),
+      pin: ".hgal__stage",
+      scrub: 0.6,
+      invalidateOnRefresh: true,
+      onUpdate(self) {
+        gsap.set("#hgalBar", { scaleX: self.progress });
+      },
+    },
+  });
+
+  /* ── velocity skew on gallery cards ── */
+  const skewSetter = gsap.quickSetter("[data-skew]", "skewY", "deg");
+  const clampSkew = gsap.utils.clamp(-4, 4);
+  ScrollTrigger.create({
+    onUpdate(self) {
+      const skew = clampSkew(self.getVelocity() / -500);
+      if (Math.abs(skew) > 0.05) {
+        skewSetter(skew);
+        gsap.to({}, { duration: 0.5, onComplete: () => skewSetter(0), overwrite: "auto" });
+      }
+    },
+  });
+
+  /* ── counters ── */
+  $$("[data-counter]").forEach((el) => {
+    const target = parseFloat(el.dataset.counter);
+    const decimals = parseInt(el.dataset.decimals || "0", 10);
+    const state = { v: 0 };
+    ScrollTrigger.create({
+      trigger: el,
+      start: "top 88%",
+      once: true,
+      onEnter: () =>
+        gsap.to(state, {
+          v: target,
+          duration: 2,
+          ease: "power3.out",
+          onUpdate: () =>
+            (el.textContent = decimals
+              ? state.v.toFixed(decimals)
+              : Math.round(state.v).toLocaleString("en-US")),
+        }),
+    });
+  });
+
+  /* ── destinations: counter-scroll headline + image parallax ── */
+  $$(".dest").forEach((row) => {
+    const dir = parseFloat(row.dataset.dir || "1");
+    gsap.fromTo(
+      $(".dest__name", row),
+      { xPercent: 9 * dir },
+      {
+        xPercent: -9 * dir,
+        ease: "none",
+        scrollTrigger: { trigger: row, start: "top bottom", end: "bottom top", scrub: true },
+      }
+    );
+    gsap.fromTo(
+      $(".dest__media img", row),
+      { yPercent: -12 },
+      {
+        yPercent: 0,
+        ease: "none",
+        scrollTrigger: { trigger: row, start: "top bottom", end: "bottom top", scrub: true },
+      }
+    );
+  });
+
+  /* ── quote: cream theme + word reveal ── */
+  ScrollTrigger.create({
+    trigger: ".quote",
+    start: "top 62%",
+    end: "bottom 30%",
+    onEnter: () => document.body.classList.add("theme-cream"),
+    onLeave: () => document.body.classList.remove("theme-cream"),
+    onEnterBack: () => document.body.classList.add("theme-cream"),
+    onLeaveBack: () => document.body.classList.remove("theme-cream"),
+  });
+  const quoteWords = splitWords($("#quoteText"));
+  gsap.set(quoteWords, { opacity: 0, yPercent: 40 });
+  ScrollTrigger.create({
+    trigger: ".quote",
+    start: "top 60%",
+    once: true,
+    onEnter: () =>
+      gsap.to(quoteWords, {
+        opacity: 1,
+        yPercent: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        stagger: 0.035,
+      }),
+  });
+
+  /* ── generic reveals ── */
+  $$(".hgal__title, .dests__kicker, .footer__lead, .quote__by, .quote__mark").forEach((el) => {
+    gsap.from(el, {
+      opacity: 0,
+      y: 30,
+      duration: 1,
+      ease: "power3.out",
+      scrollTrigger: { trigger: el, start: "top 88%", once: true },
+    });
+  });
+
+  /* ── magnetic mail link ── */
+  const magnet = $("#magnetMail");
+  if (magnet && window.matchMedia("(hover: hover)").matches) {
+    magnet.addEventListener("mousemove", (e) => {
+      const r = magnet.getBoundingClientRect();
+      gsap.to(magnet, {
+        x: (e.clientX - r.left - r.width / 2) * 0.18,
+        y: (e.clientY - r.top - r.height / 2) * 0.3,
+        duration: 0.5,
+        ease: "power3.out",
       });
     });
+    magnet.addEventListener("mouseleave", () =>
+      gsap.to(magnet, { x: 0, y: 0, duration: 0.7, ease: "elastic.out(1, 0.4)" })
+    );
   }
 
-  /* ─────────── Property filters ─────────── */
-  const filterButtons = document.querySelectorAll(".filter");
-  const cards = document.querySelectorAll(".card");
+  wireMenu(lenis);
 
-  filterButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      filterButtons.forEach((b) => b.classList.remove("is-active"));
-      btn.classList.add("is-active");
-      const filter = btn.dataset.filter;
+  window.addEventListener("load", () => ScrollTrigger.refresh());
 
-      cards.forEach((card) => {
-        const show = filter === "all" || card.dataset.category === filter;
-        if (show) {
-          card.classList.remove("is-filtered-out");
-          // re-trigger a soft entrance
-          card.style.animation = "none";
-          void card.offsetWidth;
-          card.style.animation = "";
+  /* ── menu overlay (works with or without gsap) ── */
+  function wireMenu(lenisInstance) {
+    const btn = $("#menuBtn");
+    const menu = $("#menuOverlay");
+    if (!btn || !menu) return;
+    const links = $$(".menu__links a, .menu__foot span", menu);
+    let open = false;
+
+    const setOpen = (next) => {
+      open = next;
+      btn.setAttribute("aria-expanded", String(open));
+      menu.setAttribute("aria-hidden", String(!open));
+      btn.querySelector(".nav__menu-label").textContent = open ? "Close" : "Menu";
+      if (typeof gsap === "undefined") {
+        menu.style.visibility = open ? "visible" : "hidden";
+        menu.style.clipPath = open ? "inset(0 0 0% 0)" : "inset(0 0 100% 0)";
+        return;
+      }
+      if (open) {
+        if (lenisInstance) lenisInstance.stop();
+        gsap.timeline()
+          .set(menu, { visibility: "visible" })
+          .to(menu, { clipPath: "inset(0 0 0% 0)", duration: 0.8, ease: "power4.inOut" })
+          .fromTo(
+            links,
+            { y: 40, opacity: 0 },
+            { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", stagger: 0.07 },
+            "-=0.3"
+          );
+      } else {
+        if (lenisInstance) lenisInstance.start();
+        gsap.timeline()
+          .to(menu, { clipPath: "inset(0 0 100% 0)", duration: 0.7, ease: "power4.inOut" })
+          .set(menu, { visibility: "hidden" });
+      }
+    };
+
+    btn.addEventListener("click", () => setOpen(!open));
+
+    $$("[data-scroll-to]").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        const target = $(a.dataset.scrollTo);
+        if (!target) return;
+        e.preventDefault();
+        if (open) setOpen(false);
+        if (lenisInstance) {
+          setTimeout(() => lenisInstance.scrollTo(target, { duration: 1.6 }), open ? 500 : 0);
         } else {
-          card.classList.add("is-filtered-out");
+          target.scrollIntoView({ behavior: "smooth" });
         }
       });
     });
-  });
-
-  /* ─────────── Favourite toggles ─────────── */
-  document.querySelectorAll(".card__fav").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      const fav = btn.classList.toggle("is-fav");
-      btn.textContent = fav ? "♥" : "♡";
-      btn.setAttribute("aria-label", fav ? "Remove from favourites" : "Save to favourites");
-    });
-  });
-
-  /* ─────────── Testimonial slider ─────────── */
-  const quotes = [...document.querySelectorAll(".quote")];
-  const dotsWrap = document.getElementById("quoteDots");
-  let quoteIndex = 0;
-  let quoteTimer = null;
-
-  quotes.forEach((_, i) => {
-    const dot = document.createElement("button");
-    dot.setAttribute("aria-label", `Go to testimonial ${i + 1}`);
-    dot.addEventListener("click", () => { showQuote(i); restartQuoteTimer(); });
-    dotsWrap.appendChild(dot);
-  });
-  const dots = [...dotsWrap.children];
-
-  function showQuote(i) {
-    quoteIndex = (i + quotes.length) % quotes.length;
-    quotes.forEach((q, j) => q.classList.toggle("is-active", j === quoteIndex));
-    dots.forEach((d, j) => d.classList.toggle("is-active", j === quoteIndex));
   }
-  function restartQuoteTimer() {
-    if (reduceMotion) return;
-    clearInterval(quoteTimer);
-    quoteTimer = setInterval(() => showQuote(quoteIndex + 1), 6500);
-  }
-
-  document.getElementById("quotePrev").addEventListener("click", () => { showQuote(quoteIndex - 1); restartQuoteTimer(); });
-  document.getElementById("quoteNext").addEventListener("click", () => { showQuote(quoteIndex + 1); restartQuoteTimer(); });
-
-  showQuote(0);
-  restartQuoteTimer();
-
-  /* ─────────── Magnetic buttons ─────────── */
-  if (!isTouch && !reduceMotion) {
-    document.querySelectorAll("[data-magnetic]").forEach((el) => {
-      const strength = 14;
-      el.addEventListener("mousemove", (e) => {
-        const rect = el.getBoundingClientRect();
-        const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
-        const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
-        el.style.transform = `translate(${x * strength}px, ${y * strength * 0.6}px)`;
-      });
-      el.addEventListener("mouseleave", () => {
-        el.style.transition = "transform .5s cubic-bezier(.16,1,.3,1)";
-        el.style.transform = "";
-        setTimeout(() => { el.style.transition = ""; }, 500);
-      });
-    });
-  }
-
-  /* ─────────── Contact form ─────────── */
-  const form = document.getElementById("contactForm");
-  const note = document.getElementById("formNote");
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const name = document.getElementById("fName").value.trim().split(" ")[0];
-    note.textContent = `Thank you${name ? ", " + name : ""} — an advisor will be in touch within one business day.`;
-    form.reset();
-    setTimeout(() => { note.textContent = ""; }, 8000);
-  });
-
-  /* ─────────── Smooth anchor offset for fixed nav ─────────── */
-  document.querySelectorAll('a[href^="#"]').forEach((link) => {
-    link.addEventListener("click", (e) => {
-      const id = link.getAttribute("href");
-      if (id === "#top") return;
-      const target = document.querySelector(id);
-      if (!target) return;
-      e.preventDefault();
-      const top = target.getBoundingClientRect().top + window.scrollY - 72;
-      window.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
-    });
-  });
-
 })();
