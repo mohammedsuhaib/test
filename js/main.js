@@ -94,14 +94,74 @@
     .to("[data-j-fade]", { opacity: 1, duration: 1.1, ease: "power2.out", stagger: 0.12 }, "-=0.8")
     .to(".nav", { opacity: 1, duration: 0.8 }, "<");
 
-  /* ── the descent: orbit → city → residence → room by room ──
-     Each layer zooms toward the viewer and dissolves, revealing the
-     next scene already growing — one continuous dive. */
+  /* ── the descent ──
+     Preferred: one continuous 3D camera move through a procedural villa
+     (Three.js). Fallback: the photo zoom-through sequence. */
   const layers = $$(".jlayer");
   const stageEl = $("#jStage");
   const altEl = $("#jAlt");
   let jIndex = 0;
 
+  const STAGES = [
+    ["Low Earth Orbit", "400 KM"],
+    ["Above the City", "12 KM"],
+    ["The Approach", "30 M"],
+    ["The Pool Front", "0 M"],
+    ["The Glass Door", "Ground Floor"],
+    ["The Living Room", "Ground Floor"],
+    ["The Kitchen", "Ground Floor"],
+    ["The Stairwell", "Mid Air"],
+    ["The Master Suite", "First Floor"],
+    ["The Terrace", "Garden Level"],
+  ];
+  const setStage = (i) => {
+    if (i === jIndex) return;
+    jIndex = i;
+    stageEl.textContent = STAGES[i] ? STAGES[i][0] : layers[i].dataset.stage;
+    altEl.textContent = STAGES[i] ? STAGES[i][1] : layers[i].dataset.alt;
+    gsap.fromTo([stageEl, altEl], { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out", overwrite: true });
+  };
+
+  /* stage bands matched to where the camera actually is on its path */
+  const BANDS = [0.10, 0.23, 0.35, 0.44, 0.52, 0.60, 0.68, 0.80, 0.92, 1.01];
+
+  const canvas = $("#journeyCanvas");
+  const scene3d = canvas && window.initOnyxScene ? initOnyxScene(canvas) : null;
+
+  if (scene3d) {
+    /* ═══ true 3D flythrough ═══ */
+    doc.classList.add("webgl");
+    stageEl.textContent = STAGES[0][0];
+    altEl.textContent = STAGES[0][1];
+    scene3d.resize();
+    window.addEventListener("resize", scene3d.resize);
+
+    let target = 0, current = 0;
+    ScrollTrigger.create({
+      trigger: ".journey",
+      start: "top top",
+      end: "+=780%",
+      pin: ".journey__stage",
+      scrub: true,
+      onUpdate(self) {
+        target = self.progress;
+        gsap.set("#jBar", { scaleX: self.progress });
+        setStage(BANDS.findIndex((b) => self.progress < b));
+      },
+    });
+    gsap.to(".journey__title", {
+      autoAlpha: 0,
+      yPercent: -14,
+      ease: "none",
+      scrollTrigger: { trigger: ".journey", start: "top top", end: "+=60%", scrub: 0.4 },
+    });
+    gsap.ticker.add((t) => {
+      current += (target - current) * 0.075; // extra glide on top of scrub
+      scene3d.render(current, t * 1000);
+    });
+  } else initPhotoJourney();
+
+  function initPhotoJourney() {
   layers.forEach((l, i) => {
     if (i) {
       gsap.set(l, { autoAlpha: 0 });
@@ -144,6 +204,7 @@
   });
   /* settle: the last room breathes slightly at the end of the dive */
   journeyTl.to($("img", layers[layers.length - 1]), { scale: 1.06, duration: 0.6, ease: "none" });
+  } /* end initPhotoJourney */
 
   /* ── manifesto: word-by-word ink-in while pinned ── */
   const manifestoWords = splitWords($("#manifestoText"));
