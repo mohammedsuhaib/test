@@ -16,6 +16,23 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* keyboard focus is always visible */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.skip-link {
+  position: fixed; z-index: 400; top: 0.8rem; left: 0.8rem;
+  background: var(--gold); color: var(--ink);
+  font: 600 0.8rem var(--sans); letter-spacing: 0.1em;
+  padding: 0.8rem 1.2rem; border-radius: 4px;
+  transform: translateY(-300%);
+}
+.skip-link:focus { transform: none; }
+
+a, button { touch-action: manipulation; }
+
 html { scroll-behavior: auto; }
 html.reduced { scroll-behavior: smooth; }
 
@@ -207,7 +224,7 @@ html.reduced .journey__hud { display: none; }
   color: var(--cream);
   font: 500 0.62rem var(--sans);
   letter-spacing: 0.25em; text-transform: uppercase;
-  padding: 0.55rem 1.1rem; border-radius: 999px;
+  padding: 0.9rem 1.3rem; min-height: 44px; border-radius: 999px;
   cursor: pointer;
   backdrop-filter: blur(4px);
   transition: border-color 0.3s ease, color 0.3s ease;

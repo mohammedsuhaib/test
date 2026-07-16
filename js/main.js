@@ -435,16 +435,21 @@
             { y: 40, opacity: 0 },
             { y: 0, opacity: 1, duration: 0.7, ease: "power3.out", stagger: 0.07 },
             "-=0.3"
-          );
+          )
+          .call(() => { const first = menu.querySelector("a"); if (first) first.focus(); });
       } else {
         if (lenisInstance) lenisInstance.start();
         gsap.timeline()
           .to(menu, { clipPath: "inset(0 0 100% 0)", duration: 0.7, ease: "power4.inOut" })
-          .set(menu, { visibility: "hidden" });
+          .set(menu, { visibility: "hidden" })
+          .call(() => btn.focus());
       }
     };
 
     btn.addEventListener("click", () => setOpen(!open));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && open) setOpen(false);
+    });
 
     $$("[data-scroll-to]").forEach((a) => {
       a.addEventListener("click", (e) => {
