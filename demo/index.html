@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onyx Estates — Monochrome Edition (UI/UX Pro Max demo)</title>
+  <meta name="description" content="Design demo: Onyx Estates rebuilt from scratch following the UI/UX Pro Max design system — monochrome editorial, Cinzel + Josefin Sans, zero radius." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Josefin+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='black'/><text x='50' y='72' font-size='60' text-anchor='middle' fill='white'>O</text></svg>" />
+  <style>
+    /* ════════════════════════════════════════════
+       ONYX ESTATES — Monochrome Edition
+       Built to the UI/UX Pro Max design system:
+       · Style: Monochrome Editorial × Exaggerated Minimalism
+         (black + white only, zero radius, border-driven depth,
+          color inversion as the interaction language)
+       · Type: Cinzel (display) + Josefin Sans (body)
+         + JetBrains Mono (labels/data) — the skill's
+         real-estate pairing
+       · Motion: standard tier — staggered fade-in entrances,
+         150–300ms transitions, reduced-motion respected
+       ════════════════════════════════════════════ */
+    :root {
+      --ink: #000000;
+      --paper: #ffffff;
+      --serif: "Cinzel", serif;
+      --sans: "Josefin Sans", sans-serif;
+      --mono: "JetBrains Mono", monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
+    :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+    a, button { touch-action: manipulation; cursor: pointer; }
+
+    body {
+      font-family: var(--sans);
+      font-weight: 300;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.6;
+    }
+    img { display: block; max-width: 100%; }
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--ink); color: var(--paper); }
+
+    .mono {
+      font-family: var(--mono); font-size: 0.7rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+    }
+    .wrap { max-width: 1320px; margin: 0 auto; padding: 0 5vw; }
+
+    /* ── header ── */
+    header {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--paper);
+      border-bottom: 4px solid var(--ink);
+    }
+    .bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.1rem 5vw;
+    }
+    .logo { font-family: var(--serif); font-weight: 600; font-size: 1.15rem; letter-spacing: 0.14em; }
+    nav { display: flex; gap: 2rem; }
+    nav a { padding: 0.8rem 0.2rem; border-bottom: 2px solid transparent; transition: border-color 0.2s ease; }
+    nav a:hover { border-color: var(--ink); }
+    .btn {
+      display: inline-block;
+      background: var(--ink); color: var(--paper);
+      border: 2px solid var(--ink);
+      padding: 1rem 2rem; min-height: 44px;
+      font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+    }
+    .btn:hover { background: var(--paper); color: var(--ink); }
+    .btn:active { transform: scale(0.96); }
+    .btn--ghost { background: var(--paper); color: var(--ink); }
+    .btn--ghost:hover { background: var(--ink); color: var(--paper); }
+    @media (max-width: 760px) { nav { display: none; } }
+
+    /* ── hero ── */
+    .hero { border-bottom: 4px solid var(--ink); }
+    .hero .wrap { padding-top: 9vh; padding-bottom: 0; }
+    .kicker { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+    .kicker::after { content: ""; flex: 1; height: 1px; background: var(--ink); }
+    h1 {
+      font-family: var(--serif); font-weight: 500;
+      font-size: clamp(2.6rem, 9vw, 8rem);
+      line-height: 1.04; letter-spacing: 0.01em;
+      text-transform: uppercase;
+      max-width: 14ch;
+    }
+    .hero-sub {
+      display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-end;
+      justify-content: space-between;
+      padding: 3rem 0;
+    }
+    .hero-sub p { max-width: 44ch; font-size: 1.05rem; }
+    .hero-figure { border: 4px solid var(--ink); border-bottom: 0; position: relative; }
+    .hero-figure img { width: 100%; aspect-ratio: 21 / 9; object-fit: cover; filter: grayscale(1); transition: filter 0.45s ease; }
+    .hero-figure:hover img { filter: grayscale(0); }
+    .hero-figure figcaption {
+      position: absolute; left: 0; bottom: 0;
+      background: var(--ink); color: var(--paper);
+      padding: 0.7rem 1.2rem;
+    }
+
+    /* ── ticker ── */
+    .ticker { border-bottom: 1px solid var(--ink); overflow: hidden; }
+    .ticker div {
+      display: flex; width: max-content; padding: 0.85rem 0;
+      animation: tick 30s linear infinite;
+    }
+    @keyframes tick { to { transform: translateX(-50%); } }
+    @media (prefers-reduced-motion: reduce) { .ticker div { animation: none; } }
+
+    /* ── section scaffold ── */
+    section { padding: 7rem 0; }
+    .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 2rem; margin-bottom: 3.5rem; }
+    h2 {
+      font-family: var(--serif); font-weight: 500; text-transform: uppercase;
+      font-size: clamp(1.8rem, 4.5vw, 3.4rem); line-height: 1.1;
+    }
+
+    /* ── listings ledger ── */
+    .ledger { border: 2px solid var(--ink); border-bottom: 0; }
+    .row {
+      display: grid;
+      grid-template-columns: 3.5rem 1.6fr 1.2fr 0.9fr 0.7fr auto;
+      gap: 1.5rem; align-items: center;
+      padding: 1.6rem 1.8rem;
+      border-bottom: 2px solid var(--ink);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .row:hover, .row:focus-visible { background: var(--ink); color: var(--paper); }
+    .row-name { font-family: var(--serif); font-size: 1.25rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .row-price { font-family: var(--mono); font-size: 0.95rem; text-align: right; font-variant-numeric: tabular-nums; }
+    .row .mono { opacity: 0.75; }
+    .row:hover .mono { opacity: 0.85; }
+    @media (max-width: 900px) {
+      .row { grid-template-columns: 2.2rem 1fr auto; }
+      .row .hide-m { display: none; }
+    }
+
+    /* ── feature split ── */
+    .split { display: grid; grid-template-columns: 1fr 1fr; border: 4px solid var(--ink); }
+    .split figure { border-right: 4px solid var(--ink); }
+    .split img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1); transition: filter 0.45s ease; }
+    .split:hover img { filter: grayscale(0); }
+    .split-body { padding: 3.5rem; display: flex; flex-direction: column; gap: 1.4rem; justify-content: center; }
+    .split-body h3 { font-family: var(--serif); font-size: clamp(1.6rem, 3vw, 2.6rem); text-transform: uppercase; line-height: 1.15; }
+    .spec { display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--ink); }
+    .spec span { padding: 0.7rem 1.1rem; border-right: 1px solid var(--ink); }
+    .spec span:last-child { border-right: 0; }
+    @media (max-width: 900px) {
+      .split { grid-template-columns: 1fr; }
+      .split figure { border-right: 0; border-bottom: 4px solid var(--ink); }
+      .split img { aspect-ratio: 4 / 3; }
+    }
+
+    /* ── metrics ── */
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3rem 2.5rem; }
+    .metric { border-top: 4px solid var(--ink); padding-top: 1.4rem; }
+    .metric b {
+      display: block; font-family: var(--serif); font-weight: 500;
+      font-size: clamp(2.6rem, 5.5vw, 4.6rem); line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric span { display: block; margin-top: 0.7rem; }
+    @media (max-width: 760px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ── process ── */
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); border: 2px solid var(--ink); }
+    .step { padding: 2.4rem 1.8rem 3rem; border-right: 2px solid var(--ink); }
+    .step:last-child { border-right: 0; }
+    .step h3 { font-family: var(--serif); text-transform: uppercase; font-size: 1.2rem; margin: 1.6rem 0 0.7rem; }
+    .step p { font-size: 0.95rem; }
+    @media (max-width: 900px) {
+      .steps { grid-template-columns: 1fr 1fr; }
+      .step { border-bottom: 2px solid var(--ink); }
+      .step:nth-child(n + 3) { border-bottom: 0; }
+      .step:nth-child(2n) { border-right: 0; }
+    }
+
+    /* ── quote (full inversion) ── */
+    .quote-block { background: var(--ink); color: var(--paper); }
+    .quote-block blockquote {
+      font-family: var(--serif); font-size: clamp(1.5rem, 3.6vw, 2.9rem);
+      line-height: 1.35; max-width: 30ch; text-transform: uppercase;
+    }
+    .quote-block footer { margin-top: 2.5rem; }
+
+    /* ── CTA ── */
+    .cta { text-align: center; border-top: 4px solid var(--ink); }
+    .cta h2 { font-size: clamp(2.2rem, 7vw, 6rem); max-width: 16ch; margin: 0 auto 3rem; }
+
+    /* ── footer ── */
+    .foot {
+      border-top: 4px solid var(--ink);
+      display: flex; flex-wrap: wrap; gap: 1rem;
+      align-items: center; justify-content: space-between;
+      padding: 1.6rem 5vw;
+    }
+
+    /* ── entrance motion (standard tier: stagger fade, Y 20→0) ── */
+    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.55s ease-out, transform 0.55s ease-out; }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="bar">
+      <span class="logo">ONYX ESTATES</span>
+      <nav class="mono" aria-label="Primary">
+        <a href="#portfolio">Portfolio</a>
+        <a href="#residence">Residence</a>
+        <a href="#process">Process</a>
+        <a href="#contact">Contact</a>
+      </nav>
+      <a class="btn" href="#contact">Book a viewing</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- hero -->
+    <section class="hero" style="padding: 0;">
+      <div class="wrap">
+        <p class="kicker mono reveal">Boutique Real Estate House — Est. 2009</p>
+        <h1 class="reveal">Exceptional homes, precisely curated.</h1>
+        <div class="hero-sub">
+          <p class="reveal">Twelve advisors. Four cities. A portfolio measured not in
+            square feet but in the quality of its mornings. We list only what we
+            would live in ourselves.</p>
+          <a class="btn btn--ghost reveal" href="#portfolio">View the portfolio</a>
+        </div>
+        <figure class="hero-figure reveal">
+          <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2000&auto=format&fit=crop" alt="The Glasshouse Residence at dusk, pool glowing" />
+          <figcaption class="mono">The Glasshouse Residence — Beverly Hills</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ticker -->
+    <div class="ticker mono" aria-hidden="true">
+      <div>
+        <span>&nbsp;Beverly Hills — 142 residences · Manhattan — 96 residences · Miami Beach — 78 residences · Aspen — 54 residences ·&nbsp;</span>
+        <span>&nbsp;Beverly Hills — 142 residences · Manhattan — 96 residences · Miami Beach — 78 residences · Aspen — 54 residences ·&nbsp;</span>
+      </div>
+    </div>
+
+    <!-- listings ledger -->
+    <section id="portfolio">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="reveal">The Ledger</h2>
+          <span class="mono reveal">Selected listings · 2026</span>
+        </div>
+        <div class="ledger reveal">
+          <a class="row" href="#residence">
+            <span class="mono">01</span>
+            <span class="row-name">The Glasshouse Residence</span>
+            <span class="mono hide-m">Beverly Hills, CA</span>
+            <span class="mono hide-m">6 bd · 8 ba</span>
+            <span class="mono hide-m">11,200 sqft</span>
+            <span class="row-price">$12,400,000</span>
+          </a>
+          <a class="row" href="#residence">
+            <span class="mono">02</span>
+            <span class="row-name">Marina Skyline Penthouse</span>
+            <span class="mono hide-m">Miami Beach, FL</span>
+            <span class="mono hide-m">4 bd · 5 ba</span>
+            <span class="mono hide-m">6,800 sqft</span>
+            <span class="row-price">$8,750,000</span>
+          </a>
+          <a class="row" href="#residence">
+            <span class="mono">03</span>
+            <span class="row-name">Cedar &amp; Stone Retreat</span>
+            <span class="mono hide-m">Aspen, CO</span>
+            <span class="mono hide-m">5 bd · 6 ba</span>
+            <span class="mono hide-m">7,400 sqft</span>
+            <span class="row-price">$6,900,000</span>
+          </a>
+          <a class="row" href="#residence">
+            <span class="mono">04</span>
+            <span class="row-name">Palm Court Estate</span>
+            <span class="mono hide-m">Palm Springs, CA</span>
+            <span class="mono hide-m">4 bd · 5 ba</span>
+            <span class="mono hide-m">6,100 sqft</span>
+            <span class="row-price">$5,400,000</span>
+          </a>
+          <a class="row" href="#residence">
+            <span class="mono">05</span>
+            <span class="row-name">Harbor Light House</span>
+            <span class="mono hide-m">Sausalito, CA</span>
+            <span class="mono hide-m">3 bd · 4 ba</span>
+            <span class="mono hide-m">3,800 sqft</span>
+            <span class="row-price">$4,150,000</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- featured residence -->
+    <section id="residence" style="padding-top: 0;">
+      <div class="wrap">
+        <div class="split reveal">
+          <figure>
+            <img loading="lazy" decoding="async" src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1400&auto=format&fit=crop" alt="Marina Skyline Penthouse, glass walls over the water" />
+          </figure>
+          <div class="split-body">
+            <span class="mono">Residence of the month</span>
+            <h3>Marina Skyline Penthouse</h3>
+            <p>Forty-first floor. Glass on three sides. The kind of sunset that
+              interrupts conversations. Private elevator, chef's kitchen and a
+              terrace that seats twenty for dinner.</p>
+            <div class="spec mono">
+              <span>4 Beds</span><span>5 Baths</span><span>6,800 sqft</span><span>$8.75M</span>
+            </div>
+            <div><a class="btn" href="#contact">Request the file</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- metrics -->
+    <section style="padding-top: 0;">
+      <div class="wrap">
+        <div class="metrics">
+          <div class="metric reveal"><b>$2.1B</b><span class="mono">In closed sales</span></div>
+          <div class="metric reveal"><b>3,400</b><span class="mono">Families placed</span></div>
+          <div class="metric reveal"><b>98%</b><span class="mono">Client satisfaction</span></div>
+          <div class="metric reveal"><b>27</b><span class="mono">Design awards</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- process -->
+    <section id="process" style="padding-top: 0;">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="reveal">The Process</h2>
+          <span class="mono reveal">Four steps · Zero friction</span>
+        </div>
+        <div class="steps reveal">
+          <div class="step"><span class="mono">01</span><h3>Discover</h3><p>A private consultation to understand how you live — then a shortlist from listed and off-market homes.</p></div>
+          <div class="step"><span class="mono">02</span><h3>Experience</h3><p>Unhurried private viewings, at golden hour if you like. A home should be met, not toured.</p></div>
+          <div class="step"><span class="mono">03</span><h3>Secure</h3><p>Negotiation and diligence handled by your advisor and in-house counsel. Informed, never burdened.</p></div>
+          <div class="step"><span class="mono">04</span><h3>Arrive</h3><p>Keys in hand — plus the architects, designers and staff to make the house entirely yours.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- quote -->
+    <section class="quote-block">
+      <div class="wrap">
+        <span class="mono reveal">Client words</span>
+        <blockquote class="reveal" style="margin-top: 2rem;">
+          "They said no to showing us three homes because the light was wrong
+          for how we live. That's when we knew."
+        </blockquote>
+        <footer class="mono reveal">Isabella Fontaine — Marina Skyline Penthouse</footer>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta" id="contact">
+      <div class="wrap">
+        <h2 class="reveal">Your next chapter has an address.</h2>
+        <a class="btn reveal" href="mailto:hello@onyxestates.com">hello@onyxestates.com</a>
+        <p class="mono reveal" style="margin-top: 2rem;">+1 (310) 555-0188 · Beverly Hills · New York · Miami · Aspen</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot mono">
+    <span>© 2026 Onyx Estates</span>
+    <span>Monochrome Edition — designed by the UI/UX Pro Max system</span>
+    <a href="../">Return to the main site</a>
+  </footer>
+
+  <script>
+    (() => {
+      const els = document.querySelectorAll(".reveal");
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        els.forEach((el) => el.classList.add("in"));
+        return;
+      }
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e, i) => {
+          if (e.isIntersecting) {
+            e.target.style.transitionDelay = Math.min(i * 45, 240) + "ms";
+            e.target.classList.add("in");
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      els.forEach((el) => io.observe(el));
+    })();
+  </script>
+</body>
+</html>
