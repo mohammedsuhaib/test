@@ -159,6 +159,27 @@
       .split img { aspect-ratio: 4 / 3; }
     }
 
+    /* ── the walkthrough (3D, framed like the photography) ── */
+    .walk {
+      position: relative; height: 100svh; overflow: hidden;
+      border-top: 4px solid var(--ink); border-bottom: 4px solid var(--ink);
+      background: var(--ink);
+    }
+    .walk canvas {
+      width: 100%; height: 100%; display: block;
+      filter: grayscale(1); transition: filter 0.45s ease;
+    }
+    .walk:hover canvas { filter: none; }
+    .walk-hud {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+      display: flex; align-items: center; gap: 1.6rem;
+      padding: 1.4rem 5vw;
+      color: var(--paper);
+    }
+    .walk-hud .walk-line { flex: 1; height: 1px; background: rgba(255,255,255,0.35); }
+    .walk-hud .walk-line i { display: block; height: 100%; background: var(--paper); transform: scaleX(0); transform-origin: left; }
+    .walk-hud b { min-width: 9ch; text-align: right; font-weight: 500; }
+
     /* ── metrics ── */
     .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3rem 2.5rem; }
     .metric { border-top: 4px solid var(--ink); padding-top: 1.4rem; }
@@ -367,6 +388,24 @@
       </div>
     </section>
 
+    <!-- the walkthrough (3D) -->
+    <section id="walkthrough" style="padding-top: 0; padding-bottom: 7rem;" hidden>
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>The Walkthrough</h2>
+          <span class="mono">One continuous camera — orbit to garden level</span>
+        </div>
+      </div>
+      <div class="walk">
+        <canvas id="walkCanvas" aria-hidden="true"></canvas>
+        <div class="walk-hud mono" aria-hidden="true">
+          <span id="walkStage">Low Earth Orbit</span>
+          <span class="walk-line"><i id="walkBar"></i></span>
+          <b id="walkAlt">400 KM</b>
+        </div>
+      </div>
+    </section>
+
     <!-- metrics -->
     <section style="padding-top: 0;">
       <div class="wrap">
@@ -426,6 +465,8 @@
   <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script defer src="../js/scene.js"></script>
   <script>
     window.addEventListener("DOMContentLoaded", () => {
       const $ = (q, c = document) => c.querySelector(q);
@@ -572,6 +613,48 @@
         if (boost > tick.timeScale()) tick.timeScale(boost);
         gsap.to(tick, { timeScale: 1, duration: 1, ease: "power2.out", overwrite: "auto" });
       } });
+
+      /* the walkthrough: the villa flythrough, scroll-scrubbed in its frame */
+      (() => {
+        const sec = $("#walkthrough");
+        const canvas = $("#walkCanvas");
+        const scene3d = canvas && window.initOnyxScene ? initOnyxScene(canvas) : null;
+        if (!scene3d) return; /* no WebGL → section stays hidden */
+        sec.hidden = false;
+        scene3d.resize();
+        window.addEventListener("resize", scene3d.resize);
+        const STAGES = [
+          ["Low Earth Orbit", "400 KM", 0.07], ["Above the City", "12 KM", 0.19],
+          ["The Approach", "30 M", 0.27], ["The Pool Front", "0 M", 0.33],
+          ["The Glass Door", "Ground Floor", 0.39], ["The Living Room", "Ground Floor", 0.45],
+          ["The Kitchen", "Ground Floor", 0.52], ["The Stairwell", "Climbing", 0.79],
+          ["The Master Suite", "First Floor", 0.94], ["The Terrace", "Garden Level", 1.01],
+        ];
+        let wIndex = 0, target = 0, current = 0;
+        ScrollTrigger.create({
+          trigger: ".walk",
+          start: "top top",
+          end: "+=500%",
+          pin: true,
+          scrub: true,
+          onUpdate(self) {
+            target = self.progress;
+            gsap.set("#walkBar", { scaleX: self.progress });
+            const i = STAGES.findIndex((st) => self.progress < st[2]);
+            if (i !== wIndex && i >= 0) {
+              wIndex = i;
+              $("#walkStage").textContent = STAGES[i][0];
+              $("#walkAlt").textContent = STAGES[i][1];
+              gsap.fromTo(["#walkStage", "#walkAlt"], { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, ease: "power2.out", overwrite: true });
+            }
+          },
+        });
+        gsap.ticker.add((t) => {
+          current += (target - current) * 0.08;
+          scene3d.render(current, t * 1000);
+        });
+        ScrollTrigger.refresh();
+      })();
 
       /* nav clicks: page-transition wipe (skill motion spec) */
       const wipe = $("#wipe");
