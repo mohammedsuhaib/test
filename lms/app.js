@@ -25,6 +25,7 @@ const initials = n => n.split(' ').filter(w => /^[A-Z]/.test(w)).slice(0, 2).map
 
 /* ---------- store ---------- */
 const KEY = 'nur-lms.v1';
+const REMINDER_KEY = 'nur-lms.reminders.v1';
 let db;
 function load() { try { db = JSON.parse(localStorage.getItem(KEY)); } catch (e) { db = null; } if (!db) { db = seed(); save(); } }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) {} }
@@ -84,7 +85,7 @@ function seed() {
     const pct = Math.round(25 + rnd() * 65);
     progress[e.courseId + ':' + e.studentId] = {pct, current: ex[e.courseId][i % 5], note: pct > 70 ? 'Excellent progress, keep revising.' : pct > 45 ? 'Steady. Needs more practice between classes.' : 'Just getting started — encourage daily practice.'};
   });
-  return {v:1, users, courses, enrollments, sessions, attendance, progress, me:'a1'};
+  return {v:1, users, courses, enrollments, sessions, attendance, progress, me:'t1'};
 }
 
 /* ---------- Zoom (SIMULATED) ----------
@@ -182,9 +183,9 @@ function localize(root) {
 function applyLang() {
   const de = document.documentElement;
   de.lang = LANG; de.dir = LANG === 'ur' ? 'rtl' : 'ltr';
-  document.title = LANG === 'ur' ? 'نور اکیڈمی — اسلامی کلاسز ایل ایم ایس' : 'Nur Academy — Islamic Classes LMS (prototype)';
+  document.title = LANG === 'ur' ? 'بوابة الأستاذ — تعلّم وعلّم' : 'Ustadh Portal — Teach · Track · Grow';
   localize($('#sidebar')); localize($('.topbar'));
-  $('#hijri').textContent = hijri(new Date());
+  const hijriEl = $('#hijri'); if (hijriEl) hijriEl.textContent = hijri(new Date());
   $('#langBtn').textContent = LANG === 'ur' ? 'English' : 'اردو';
   $('#langBtn').lang = LANG === 'ur' ? 'en' : 'ur';
 }
@@ -207,13 +208,27 @@ function notice(msg) { openModal(`<h2>Can't schedule that</h2><p>${esc(msg)}</p>
 function copy(text) { (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('Copied'), () => toast('Copy not available')); }
 
 const NAV = {
-  admin:   [['dashboard','🏠','Dashboard'],['courses','📚','Courses'],['schedule','🗓️','Class schedule'],['attendance','✅','Attendance'],['students','👥','Students'],['zoom','🎥','Zoom setup']],
-  teacher: [['dashboard','🏠','Dashboard'],['courses','📚','My courses'],['schedule','🗓️','Class schedule'],['attendance','✅','Attendance'],['students','👥','My students']],
-  student: [['dashboard','🏠','Dashboard'],['courses','📚','My courses'],['schedule','🗓️','Class schedule'],['record','📈','Attendance & progress']],
+  admin:   [['dashboard','home','Home'],['courses','book','Classes'],['students','users','Students'],['attendance','check','Attendance'],['schedule','calendar','Timetable'],['lessonlog','note','Lesson Log'],['assignments','clipboard','Assignments'],['resources','folder','Resources'],['reports','chart','Reports'],['zoom','settings','Settings']],
+  teacher: [['dashboard','home','Home'],['courses','book','Classes'],['students','users','Students'],['attendance','check','Attendance'],['schedule','calendar','Timetable'],['lessonlog','note','Lesson Log'],['assignments','clipboard','Assignments'],['resources','folder','Resources'],['reports','chart','Reports'],['zoom','settings','Settings']],
+  student: [['dashboard','home','Home'],['courses','book','My courses'],['schedule','calendar','Timetable'],['record','chart','Attendance & progress']],
 };
 
 /* ---------- routing ---------- */
 let weekStart = startOfWeek(new Date());
+let dashMode = 'Day';
+let reminders;
+function reminderItems() {
+  if (reminders) return reminders;
+  try { reminders = JSON.parse(localStorage.getItem(REMINDER_KEY)); } catch (e) { reminders = null; }
+  if (!Array.isArray(reminders)) reminders = [
+    {id:'r1', text:'Prepare worksheet for Tajweed', due:'Tomorrow, 8:00 AM', done:false},
+    {id:'r2', text:'Update attendance for Batch A', due:'Today, after class', done:false},
+    {id:'r3', text:'Send revision audio to Batch B', due:'Wed, 18 Nov', done:false},
+    {id:'r4', text:'Finalize next week’s timetable', due:'Completed', done:true},
+  ];
+  return reminders;
+}
+function saveReminders() { try { localStorage.setItem(REMINDER_KEY, JSON.stringify(reminderItems())); } catch (e) {} }
 function startOfWeek(d) { return addDays(sod(d), -sod(d).getDay()); }
 
 function route() {
@@ -222,9 +237,9 @@ function route() {
   const p = allowed.includes(page) ? page : 'dashboard';
   $('#nav').innerHTML = NAV[me().role].map(([k, ico, label]) => {
     const active = p === k || (p === 'course' && k === 'courses') || (p === 'attend' && k === 'attendance');
-    return `<a href="#${k}" class="${active ? 'active' : ''}"><span aria-hidden="true">${ico}</span>${label}</a>`;
+    return `<a href="#${k}" class="${active ? 'active' : ''}"><span class="nav-icon" aria-hidden="true">${navIcon(ico)}</span>${label}</a>`;
   }).join('');
-  const v = ({dashboard, courses, course:() => courseDetail(arg), schedule, attendance, attend:() => attendMark(arg), students, record, zoom})[p];
+  const v = ({dashboard, courses, course:() => courseDetail(arg), schedule, attendance, attend:() => attendMark(arg), students, record, zoom, lessonlog:lessonLog, assignments, resources, reports})[p];
   $('#view').innerHTML = v();
   localize($('#view')); localize($('#nav'));
   bind();
@@ -243,39 +258,84 @@ function sessionRow(s, opts = {}) {
     ${joinBtn}${opts.noArrow ? '' : '<span class="muted" aria-hidden="true">›</span>'}</div>`;
 }
 
-function dashboard() {
-  const u = me(), up = upcoming(), next = up[0], cs = myCourses();
-  const weekEnd = addDays(sod(new Date()), 7);
-  const wk = up.filter(s => new Date(s.start) < weekEnd).length;
-  let stats = '';
-  if (u.role === 'admin') {
-    const rates = db.users.filter(x => x.role === 'student').map(s => attRate(s.id)).filter(x => x !== null);
-    stats = stat(db.courses.length, 'Active courses') + stat(db.users.filter(x => x.role === 'student').length, 'Students') + stat(wk, 'Classes next 7 days') + stat((rates.length ? Math.round(rates.reduce((a, b) => a + b) / rates.length) : 0) + '%', 'Avg. attendance');
-  } else if (u.role === 'teacher') {
-    const ss = new Set(cs.flatMap(c => enrolled(c.id).map(s => s.id)));
-    stats = stat(cs.length, 'My courses') + stat(ss.size, 'My students') + stat(wk, 'Classes next 7 days') + stat(upcoming().filter(s => sod(new Date(s.start)).getTime() === sod(new Date()).getTime()).length, 'Classes today');
-  } else {
-    const rate = attRate(u.id);
-    const avg = cs.length ? Math.round(cs.reduce((a, c) => a + prog(c.id, u.id).pct, 0) / cs.length) : 0;
-    stats = stat(cs.length, 'Enrolled courses') + stat(wk, 'Classes next 7 days') + stat(rate === null ? '—' : rate + '%', 'My attendance') + stat(avg + '%', 'Average progress');
-  }
-  const hero = next ? (() => { const c = course(next.courseId), js = joinState(next); return `<div class="card hero"><div class="small meta">NEXT CLASS · ${until(next).toUpperCase()}</div>
-      <h2>${esc(c.title)} — ${esc(next.title)}</h2><div class="meta">${fmtDate(new Date(next.start))}, ${fmtTime(new Date(next.start))} · ${next.duration} min · ${esc(user(next.teacherId).name)}</div>
-      <div class="actions">${js === 'open' ? `<a class="btn gold" href="${esc(next.zoom.joinUrl)}" target="_blank" rel="noopener">${isStaff() ? 'Start on Zoom' : 'Join on Zoom'}</a>` : `<button class="btn gold" disabled>Join opens 10 min before</button>`}
-      <button class="btn ghost" data-session="${next.id}">Details</button></div></div>`; })()
-    : `<div class="card hero"><h2>No upcoming classes</h2><div class="meta">${isStaff() ? 'Schedule a class to get started.' : 'Your teacher has not scheduled anything yet.'}</div></div>`;
-  return `<div class="page-head"><div><h1>Assalamu alaikum, ${esc(u.name.replace(/ \(.*\)/, '').split(' ').slice(0, 2).join(' '))}</h1><p>${hijri(new Date())} · ${new Date().toLocaleDateString(loc(), {dateStyle:'full'})}</p></div>
-      ${isStaff() ? '<button class="btn gold" data-new-session>+ Schedule class</button>' : ''}</div>
-    <div class="grid cols-4" style="margin-bottom:16px">${stats}</div>
-    <div class="grid two"><div class="grid">${hero}
-      <div class="card"><h2>Upcoming classes</h2><div class="list">${up.slice(0, 6).map(s => sessionRow(s)).join('') || '<div class="empty">Nothing scheduled.</div>'}</div></div></div>
-      <div class="card"><h2>${u.role === 'student' ? 'My courses' : 'Courses'}</h2><div class="list">${cs.map(c => `<a class="row" href="#course-${c.id}" style="text-decoration:none;color:inherit"><div class="grow"><div class="title">${esc(c.title)}</div><div class="small muted">${enrolled(c.id).length} students</div></div><span class="badge">${u.role === 'student' ? prog(c.id, u.id).pct : courseAvg(c.id)}%</span></a>`).join('') || '<div class="empty">No courses yet.</div>'}</div></div></div>`;
+function navIcon(name) {
+  const paths = {
+    home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-6v-7h-4v7H4a1 1 0 0 1-1-1V10Z"/>',
+    book:'<path d="M3 5.5c3.4-1.3 7-.7 9 1.5v14c-2-2.2-5.6-2.8-9-1.5v-14ZM21 5.5c-3.4-1.3-7-.7-9 1.5v14c2-2.2 5.6-2.8 9-1.5v-14Z"/>',
+    users:'<path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 3.2a4 4 0 0 1 0 7.6M21 21v-2a4 4 0 0 0-3-3.9"/>',
+    check:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M7 12l3 3 7-7"/>',
+    calendar:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 9h18"/>',
+    settings:'<circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.5.9l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.5-.9l-1.7.6-1.4-2.4 1.4-1.1A7 7 0 0 1 7.5 13l-1.8-.5v-2.8l1.8-.3A8 8 0 0 1 8.4 8L7.8 6.3l2.4-1.4 1.1 1.4a7 7 0 0 1 1.7-.1l.5-1.8h2.8l.3 1.8a8 8 0 0 1 1.5.9l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 .1 1.7l1.8.5V15l-1.8.3a8 8 0 0 1-.5-.3Z"/>',
+    chart:'<path d="M4 20V11h4v9M10 20V4h4v16M16 20v-7h4v7"/>',
+    note:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h8"/>',
+    clipboard:'<rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 4V2h6v2M8 10h8M8 14h8M8 18h5"/>',
+    folder:'<path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z"/><path d="M3 9h18"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    reminder:'<path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
+    search:'<circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/>',
+  };
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.book}</svg>`;
 }
-const stat = (n, l) => `<div class="card stat"><b>${n}</b><span>${l}</span></div>`;
+
+function dashboard() {
+  const u = me(), up = upcoming(), next = up[0];
+  const focusDay = sod(new Date(up.find(s => sod(new Date(s.start)).getTime() === sod(new Date()).getTime())?.start || next?.start || new Date()));
+  const sameDay = s => sod(new Date(s.start)).getTime() === focusDay.getTime();
+  const focusWeek = startOfWeek(focusDay), focusMonth = focusDay.getMonth();
+  const timetableRows = dashMode === 'Day' ? up.filter(sameDay) : dashMode === 'Week'
+    ? up.filter(s => new Date(s.start) >= focusWeek && new Date(s.start) < addDays(focusWeek, 7))
+    : up.filter(s => new Date(s.start).getMonth() === focusMonth && new Date(s.start).getFullYear() === focusDay.getFullYear());
+  const focusLabel = focusDay.toLocaleDateString(loc(), {weekday:'short', day:'numeric', month:'short'});
+  const dateText = new Date().toLocaleDateString(loc(), {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+  const dateHijri = hijri(new Date());
+  const upRows = up.slice(0, 3).map((s, i) => {
+    const c = course(s.courseId), st = new Date(s.start), tint = ['violet','gold','teal'][i % 3];
+    return `<div class="portal-class-row" data-session="${s.id}"><div class="class-subject-icon ${tint}">${navIcon('book')}</div><div class="class-info"><b>${esc(c.title)}${s.title ? ` <span>– ${esc(s.title)}</span>` : ''}</b><small>${navIcon('clock')} ${fmtTime(st)} – ${fmtTime(sEnd(s))}</small></div><span class="class-countdown ${joinState(s) === 'open' ? 'live' : ''}">${joinState(s) === 'open' ? '✓ Live now' : `In ${until(s).replace(/^in /, '')}`}</span><button class="more-btn" aria-label="Class details" data-session="${s.id}">⋮</button></div>`;
+  }).join('');
+  const timetableContent = timetableRows.length ? timetableRows.slice(0, 5).map((s, i) => `<div class="timetable-row" data-session="${s.id}"><span class="time-range">${fmtTime(new Date(s.start))} – ${fmtTime(sEnd(s))}</span><i class="timetable-mark mark-${i % 3}"></i><b>${esc(course(s.courseId).title)}</b></div>`).join('') : '<div class="empty timetable-empty">No classes on this date.</div>';
+  const reminderList = reminderItems();
+  const reminderRows = reminderList.map(r => `<div class="reminder-row ${r.done ? 'done' : ''}"><label class="reminder-check"><input type="checkbox" data-reminder-toggle="${r.id}" ${r.done ? 'checked' : ''}><span></span></label><span class="reminder-text">${esc(r.text)}</span><span class="reminder-due ${r.done ? 'complete' : ''}">${r.done ? '<b>✓</b> Completed' : `${navIcon('calendar')} ${esc(r.due)}`}</span><button class="more-btn" aria-label="Reminder options">⋮</button></div>`).join('');
+  const greetingName = u.name.replace(/ \(.*\)/, '').split(' ').slice(0, 2).join(' ');
+  const todayCount = up.filter(s => sod(new Date(s.start)).getTime() === sod(new Date()).getTime()).length;
+  return `<div class="portal-heading"><div><h1>Assalāmu ‘Alaykum, ${esc(greetingName)}</h1><p>Here’s your teaching schedule.</p></div><div class="date-pill">${navIcon('calendar')}<span><b>${esc(dateText)}</b><small>${esc(dateHijri)}</small></span></div></div>
+    <div class="portal-dashboard-grid"><section class="portal-panel upcoming-panel"><header class="panel-heading"><div class="panel-title">${navIcon('calendar')}<h2>Upcoming Classes</h2></div><span class="panel-count">${todayCount ? `Today (${todayCount})` : `Upcoming (${Math.min(up.length, 3)})`}</span></header><div class="portal-class-list">${upRows || '<div class="empty">No upcoming classes.</div>'}</div></section>
+    <section class="portal-panel timetable-panel"><header class="panel-heading"><div class="panel-title">${navIcon('calendar')}<h2>Timetable</h2></div><div class="timetable-switch">${['Day','Week','Month'].map(m => `<button data-timetable-mode="${m}" class="${dashMode === m ? 'active' : ''}" aria-pressed="${dashMode === m}">${m}</button>`).join('')}</div></header><div class="timetable-date">${dashMode === 'Day' && focusDay.getTime() !== sod(new Date()).getTime() ? 'Next class day' : `${dashMode === 'Day' ? 'Today’s Schedule' : `${dashMode} view`} `} · ${esc(focusLabel)}</div><div class="timetable-list">${timetableContent}</div></section></div>
+    <section class="portal-panel reminders-panel"><header class="panel-heading"><div class="panel-title">${navIcon('reminder')}<h2>Reminders <span>(${reminderList.length})</span></h2></div><button class="add-reminder" data-new-reminder>＋ Add Reminder</button></header><div class="reminder-list">${reminderRows}</div></section>`;
+}
+
+function lessonLog() {
+  const cs = myCourses(), u = me();
+  return `<div class="page-head"><div><h1>Lesson Log</h1><p>Recent learning progress across your classes.</p></div></div>
+    <div class="grid cols-3">${cs.map(c => {
+      const es = enrolled(c.id);
+      return `<section class="card lesson-log-card"><div class="section-head"><h2>${esc(c.title)}</h2><span class="badge">${es.length} students</span></div><div class="list">${es.slice(0,4).map(s => { const p = prog(c.id,s.id); return `<div class="row"><div class="grow"><b>${esc(s.name)}</b><div class="small muted">${esc(p.current || 'No lesson logged')}</div></div><span class="badge grey">${p.pct}%</span>${isStaff() ? `<button class="btn ghost sm" data-prog="${c.id}:${s.id}">Update</button>` : ''}</div>`; }).join('') || '<div class="empty">No students enrolled.</div>'}</div></section>`;
+    }).join('') || '<div class="card empty">No classes to show.</div>'}</div>`;
+}
+
+function assignments() {
+  return `<div class="page-head"><div><h1>Assignments</h1><p>Class tasks shared with your learners.</p></div></div>
+    <section class="card empty-state"><span class="empty-state-icon">${navIcon('clipboard')}</span><h2>No assignments yet</h2><p>Assignments are not enabled in this prototype. Use <a href="#dashboard">Home reminders</a> to keep track of lesson preparation.</p></section>`;
+}
+
+function resources() {
+  const cs = myCourses();
+  return `<div class="page-head"><div><h1>Resources</h1><p>Browse the study focus and course notes for each class.</p></div></div>
+    <div class="grid cols-3">${cs.map(c => `<a class="card resource-card" href="#course-${c.id}"><span class="resource-icon">${navIcon('book')}</span><span class="badge grey">${esc(c.level)}</span><h2>${esc(c.title)}</h2><p>${esc(c.desc)}</p><span class="resource-unit">${esc(c.unit)}</span></a>`).join('') || '<div class="card empty">No resources to show.</div>'}</div>`;
+}
+
+function reports() {
+  const cs = myCourses();
+  return `<div class="page-head"><div><h1>Reports</h1><p>Attendance and learning progress by class.</p></div></div>
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Class</th><th>Students</th><th>Avg. attendance</th><th>Avg. progress</th><th>Completed classes</th></tr></thead><tbody>${cs.map(c => {
+      const es = enrolled(c.id), rates = es.map(s => attRate(s.id,c.id)).filter(x => x !== null), attendance = rates.length ? Math.round(rates.reduce((a,b) => a+b,0)/rates.length) + '%' : '—';
+      const completed = db.sessions.filter(s => s.courseId === c.id && (s.status === 'completed' || sEnd(s) < new Date())).length;
+      return `<tr><td><b>${esc(c.title)}</b></td><td>${es.length}</td><td>${attendance}</td><td>${courseAvg(c.id)}%</td><td>${completed}</td></tr>`;
+    }).join('') || '<tr><td colspan="5" class="empty">No class data yet.</td></tr>'}</tbody></table></div></div>`;
+}
 
 function courses() {
   const u = me();
-  return `<div class="page-head"><div><h1>${u.role === 'student' ? 'My courses' : 'Courses'}</h1><p>${u.role === 'student' ? 'Courses you are enrolled in.' : 'Curriculum, rosters and progress.'}</p></div>
+  return `<div class="page-head"><div><h1>${u.role === 'student' ? 'My classes' : 'Classes'}</h1><p>${u.role === 'student' ? 'Classes you are enrolled in.' : 'Class groups, curriculum, rosters and progress.'}</p></div>
     ${isAdmin() ? '<button class="btn gold" data-new-course>+ New course</button>' : ''}</div>
     <div class="grid cols-3">${myCourses().map(c => {
       const pct = u.role === 'student' ? prog(c.id, u.id).pct : courseAvg(c.id);
@@ -296,7 +356,7 @@ function courseDetail(id) {
     return `<tr><td><b>${esc(s.name)}</b></td><td style="min-width:150px"><div class="bar"><i style="width:${p.pct}%"></i></div><span class="small muted">${p.pct}% · ${esc(p.current || '—')}</span></td><td>${ar === null ? '—' : ar + '%'}</td>
       <td class="small muted">${esc(p.note)}</td><td>${canEdit ? `<button class="btn ghost sm" data-prog="${c.id}:${s.id}">Update</button> ${isAdmin() ? `<button class="btn danger sm" data-unenroll="${c.id}:${s.id}">Remove</button>` : ''}` : ''}</td></tr>`;
   }).join('');
-  return `<p><a href="#courses">← Courses</a></p>
+  return `<p><a href="#courses">← Classes</a></p>
     <div class="page-head"><div><div class="ar" lang="ar" style="font-family:Amiri,serif;font-size:1.6rem;color:${c.color}">${esc(c.ar)}</div><h1>${esc(c.title)}</h1><p>${esc(c.desc)}</p>
       <p><span class="badge grey">${esc(c.level)}</span> <span class="badge">${esc(user(c.teacherId).name)}</span></p></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${isStaff() && canEdit ? `<button class="btn gold" data-new-session="${c.id}">+ Schedule class</button>` : ''}${isAdmin() ? `<button class="btn ghost" data-edit-course="${c.id}">Edit</button><button class="btn ghost" data-enroll="${c.id}">+ Enrol student</button>` : ''}</div></div>
@@ -308,7 +368,7 @@ function schedule() {
   const days = [...Array(7)].map((_, i) => addDays(weekStart, i)), ss = mySessions();
   const todayT = sod(new Date()).getTime();
   const label = `${days[0].toLocaleDateString(loc(), {day:'numeric', month:'short'})} – ${days[6].toLocaleDateString(loc(), {day:'numeric', month:'short', year:'numeric'})}`;
-  return `<div class="page-head"><div><h1>Class schedule</h1><p>Times shown in your local time zone.</p></div>
+  return `<div class="page-head"><div><h1>Timetable</h1><p>Times shown in your local time zone.</p></div>
     <div class="week-nav"><button class="btn ghost sm" data-week="-1">‹ Prev</button><button class="btn ghost sm" data-week="0">Today</button><button class="btn ghost sm" data-week="1">Next ›</button><b style="margin-inline-start:6px">${label}</b>${isStaff() ? '<button class="btn gold sm" data-new-session>+ Schedule class</button>' : ''}</div></div>
     <div class="week">${days.map(d => {
       const list = ss.filter(s => sod(new Date(s.start)).getTime() === d.getTime());
@@ -339,7 +399,7 @@ function students() {
   const cs = myCourses(), seen = new Map();
   cs.forEach(c => enrolled(c.id).forEach(s => { (seen.get(s.id) || seen.set(s.id, {s, cs:[]}).get(s.id)).cs.push(c); }));
   const list = isAdmin() ? db.users.filter(u => u.role === 'student').map(s => seen.get(s.id) || {s, cs:[]}) : [...seen.values()];
-  return `<div class="page-head"><div><h1>${isAdmin() ? 'Students' : 'My students'}</h1><p>${list.length} learners</p></div>${isAdmin() ? '<button class="btn gold" data-new-student>+ Add student</button>' : ''}</div>
+  return `<div class="page-head"><div><h1>${isStaff() ? 'Students' : 'My students'}</h1><p>${list.length} learners</p></div>${isAdmin() ? '<button class="btn gold" data-new-student>+ Add student</button>' : ''}</div>
     <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Courses</th><th>Attendance</th>${isAdmin() ? '<th></th>' : ''}</tr></thead><tbody>${list.map(({s, cs}) => { const r = attRate(s.id); return `<tr><td><b>${esc(s.name)}</b><div class="small muted">${esc(s.email || '')}</div></td><td>${cs.map(c => `<a class="badge" style="text-decoration:none" href="#course-${c.id}">${esc(tr(c.title).split(/[—&]/)[0].trim())}</a>`).join(' ') || '<span class="muted">—</span>'}</td><td>${r === null ? '—' : `<span class="badge ${r >= 80 ? '' : r >= 60 ? 'amber' : 'red'}">${r}%</span>`}</td>${isAdmin() ? `<td><button class="btn ghost sm" data-enroll-student="${s.id}">Enrol in course</button></td>` : ''}</tr>`; }).join('')}</tbody></table></div></div>`;
 }
 
@@ -357,7 +417,7 @@ function record() {
 function zoom() {
   const n = db.sessions.filter(s => s.zoom).length;
   if (LANG === 'ur') return UR.zoomPage(n);
-  return `<div class="page-head"><div><h1>Zoom setup</h1><p>How classes get their meeting links.</p></div><button class="btn danger sm" data-reset>Reset demo data</button></div>
+  return `<div class="page-head"><div><h1>Settings</h1><p>Class joining and meeting preferences.</p></div><button class="btn danger sm" data-reset>Reset demo data</button></div>
     <div class="note"><b>Prototype mode.</b> Meeting IDs and passcodes are generated locally to show the flow — they do not open real Zoom meetings. You can still paste any real Zoom link when scheduling a class.</div>
     <div class="grid two"><div class="card"><h2>Production integration plan</h2><ol class="steps">
       <li>Institute creates a <b>Server-to-Server OAuth</b> app in the Zoom Marketplace (scopes: <code>meeting:write:admin</code>, <code>meeting:read:admin</code>, <code>user:read:admin</code>).</li>
@@ -488,6 +548,21 @@ function progressModal(key) {
     f.onsubmit = ev => { ev.preventDefault(); db.progress[key] = {pct:+f.pct.value, current:f.cur.value.trim(), note:f.note.value.trim()}; save(); closeModal(); route(); toast('Progress saved'); }; });
 }
 
+function reminderModal() {
+  openModal(`<h2>Add a reminder</h2><form id="reminder-form">
+    <div class="field"><label for="reminder-text">Reminder</label><input id="reminder-text" name="text" required maxlength="120" placeholder="What would you like to remember?"></div>
+    <div class="field"><label for="reminder-due">When</label><select id="reminder-due" name="due"><option value="today">Today, after class</option><option value="tomorrow">Tomorrow</option><option value="week">Later this week</option></select></div>
+    <div class="modal-actions"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn gold">Add reminder</button></div></form>`, m => {
+      const f = $('#reminder-form', m);
+      f.onsubmit = ev => {
+        ev.preventDefault();
+        const due = f.due.value === 'today' ? 'Today, after class' : f.due.value === 'tomorrow' ? 'Tomorrow, 8:00 AM' : 'Later this week';
+        reminderItems().unshift({id:uid('r'), text:f.text.value.trim(), due, done:false});
+        saveReminders(); closeModal(); route(); toast('Reminder added');
+      };
+    });
+}
+
 function gcalUrl(s) {
   const z = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   const c = course(s.courseId);
@@ -499,12 +574,19 @@ function gcalUrl(s) {
 function bind() {
   const v = $('#view');
   v.onclick = e => {
-    const t = e.target.closest('[data-session],[data-new-session],[data-week],[data-new-course],[data-edit-course],[data-enroll],[data-enroll-student],[data-new-student],[data-prog],[data-unenroll],[data-mark],[data-all-present],[data-reset],[data-stop]');
+    const t = e.target.closest('[data-session],[data-new-session],[data-week],[data-timetable-mode],[data-new-reminder],[data-reminder-toggle],[data-new-course],[data-edit-course],[data-enroll],[data-enroll-student],[data-new-student],[data-prog],[data-unenroll],[data-mark],[data-all-present],[data-reset],[data-stop]');
     if (!t) return;
     const d = t.dataset;
     if ('stop' in d) return; // let the Zoom link open
     if (d.session) return sessionModal(d.session);
     if ('newSession' in d) return sessionForm(null, d.newSession || undefined);
+    if (d.timetableMode) { dashMode = d.timetableMode; return route(); }
+    if ('newReminder' in d) return reminderModal();
+    if (d.reminderToggle) {
+      const item = reminderItems().find(r => r.id === d.reminderToggle);
+      if (item) item.done = !item.done;
+      saveReminders(); return route();
+    }
     if (d.week !== undefined) { weekStart = d.week === '0' ? startOfWeek(new Date()) : addDays(weekStart, 7 * +d.week); return route(); }
     if ('newCourse' in d) return courseForm();
     if (d.editCourse) return courseForm(course(d.editCourse));

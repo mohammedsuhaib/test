@@ -3,33 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Nur Academy — Islamic Classes LMS (prototype)</title>
-  <meta name="description" content="Clickable prototype: Islamic class LMS with course management, class scheduler and Zoom meeting links.">
+  <title>Ustadh Portal — Teach · Track · Grow</title>
+  <meta name="description" content="A calm teaching dashboard for online Islamic classes, students, schedules, and attendance.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=portal-4">
 </head>
 <body>
   <div class="app" id="app">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true">☪</span>
-        <div><strong>Nur Academy</strong><small>Islamic Classes LMS</small></div>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 52 48"><path d="M5 9c8-3 15 0 21 5 6-5 13-8 21-5v29c-8-2-15 0-21 5-6-5-13-7-21-5V9Z"/><path d="M26 14v29M10 15c5-1 9 0 13 3M42 15c-5-1-9 0-13 3M10 22c5-1 9 0 13 3M42 22c-5-1-9 0-13 3"/></svg></span>
+        <div><strong>Ustadh Portal</strong><small>Teach · Track · Grow</small></div>
       </div>
       <nav id="nav" aria-label="Main"></nav>
-      <div class="demo-note">Prototype · data is stored in this browser only. Zoom links are simulated.</div>
     </aside>
     <div class="main">
       <header class="topbar">
         <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu">☰</button>
-        <div class="bismillah" lang="ar" dir="rtl">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+        <div class="bismillah-wrap"><span class="ornament-line" aria-hidden="true"></span><div class="bismillah" lang="ar" dir="rtl">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div><span class="ornament-line" aria-hidden="true"></span></div>
         <div class="topbar-right">
-          <span class="hijri" id="hijri"></span>
-          <button class="btn ghost sm" id="langBtn" type="button" lang="ur" aria-label="Language">اردو</button>
-          <label class="who">Viewing as
-            <select id="who"></select>
-          </label>
+          <button class="icon-btn utility-btn" aria-label="Search" title="Search"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m16 16 5 5"/></svg></button>
+          <button class="icon-btn utility-btn notification-btn" aria-label="Notifications" title="Notifications"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><i></i></button>
+          <button class="language-btn" id="langBtn" type="button" lang="ur" aria-label="Language">اردو</button>
+          <label class="who" aria-label="Viewing as"><span class="avatar" aria-hidden="true">Y</span><select id="who"></select><span class="chevron" aria-hidden="true">⌄</span></label>
         </div>
       </header>
       <main id="view" tabindex="-1"></main>
@@ -37,7 +35,7 @@
   </div>
   <dialog id="modal"></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="lang-ur.js"></script>
-  <script src="app.js"></script>
+  <script src="lang-ur.js?v=portal-4"></script>
+  <script src="app.js?v=portal-4"></script>
 </body>
 </html>
