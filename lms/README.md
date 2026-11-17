@@ -6,6 +6,7 @@ No build step: open `index.html` or run `python3 -m http.server` in this folder.
 Use the **Viewing as** dropdown to switch between Admin, Teacher and Student. Data lives in `localStorage` (Zoom setup → Reset demo data).
 
 ## What it demonstrates
+- **English / Urdu** — toggle in the top bar (`اردو` / `English`). Urdu mode is fully right-to-left, with Urdu dates, Hijri date, weekday names and course content. Translations live in `lang-ur.js`.
 - **Courses & enrolment** — Tajweed, Hifz, Arabic, Fiqh, Seerah; rosters; admin enrols/removes students.
 - **Class scheduler** — weekly calendar, one-off and weekly recurring classes (one shared Zoom link per series), teacher double-booking check, reschedule, cancel one / cancel series, add-to-Google-Calendar link, Hijri date.
 - **Zoom (simulated)** — auto-created meeting ID/passcode or pasted real link; Join/Start enabled 10 min before class. The Zoom setup page documents the real Server-to-Server OAuth plan (`POST /users/me/meetings`, PATCH, DELETE, webhooks).
