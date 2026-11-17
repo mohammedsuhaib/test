@@ -8,13 +8,19 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = p => p + Math.random().toString(36).slice(2, 9);
 const DAY = 864e5, MIN = 6e4;
-const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const fmtTime = d => d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
-const fmtDate = d => d.toLocaleDateString([], {weekday: 'short', day: 'numeric', month: 'short'});
+const UR = window.NUR_UR || {SUB:{}, EXACT:{}, PATTERNS:[], INLINE:[], WD:[]};
+let LANG = 'en';
+try { if (localStorage.getItem('nur-lms.lang') === 'ur') LANG = 'ur'; } catch (e) {}
+const loc = () => (LANG === 'ur' ? 'ur-PK' : undefined);
+const WD = () => (LANG === 'ur' ? UR.WD : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']);
+const fmtTime = d => LANG === 'ur'
+  ? `${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')} ${d.getHours() < 12 ? 'صبح' : 'شام'}`
+  : d.toLocaleTimeString(undefined, {hour: 'numeric', minute: '2-digit'});
+const fmtDate = d => d.toLocaleDateString(loc(), {weekday: 'short', day: 'numeric', month: 'short'});
 const sod = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
 const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
 const toLocalInput = d => { const x = new Date(d - d.getTimezoneOffset() * MIN); return x.toISOString().slice(0, 16); };
-const hijri = d => { try { return new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {day:'numeric', month:'long', year:'numeric'}).format(d); } catch (e) { return ''; } };
+const hijri = d => { try { return new Intl.DateTimeFormat((LANG === 'ur' ? 'ur-PK' : 'en') + '-u-ca-islamic-umalqura', {day:'numeric', month:'long', year:'numeric'}).format(d); } catch (e) { return ''; } };
 const initials = n => n.split(' ').filter(w => /^[A-Z]/.test(w)).slice(0, 2).map(w => w[0]).join('');
 
 /* ---------- store ---------- */
@@ -140,10 +146,54 @@ function until(s) {
   return `in ${Math.round(h / 24)} day${Math.round(h / 24) > 1 ? 's' : ''}`;
 }
 
+
+/* ---------- translation (Urdu) ---------- */
+const SUBKEYS = Object.keys(UR.SUB).sort((a, b) => b.length - a.length);
+function tr(text) {
+  if (LANG !== 'ur' || !text) return text;
+  const m = /^(\s*)([\s\S]*?)(\s*)$/.exec(text); if (!m[2]) return text;
+  let core = m[2];
+  for (const k of SUBKEYS) if (core.includes(k)) core = core.split(k).join(UR.SUB[k]);
+  const part = s => {
+    const w = /^(\s*)([\s\S]*?)(\s*)$/.exec(s), c = w[2]; if (!c) return s;
+    let r = UR.EXACT[c];
+    if (r === undefined) for (const [re, fn] of UR.PATTERNS) { const x = re.exec(c); if (x) { r = fn(x, tr); break; } }
+    return r === undefined ? s : w[1] + r + w[3];
+  };
+  let out = part(core);
+  if (out === core) {
+    const bits = core.split(/(\s*[·—]\s*)/);
+    if (bits.length > 1) out = bits.map((b, i) => (i % 2 ? b : part(b))).join('');
+  }
+  for (const [re, fn] of UR.INLINE) out = out.replace(re, fn);
+  return m[1] + out + m[3];
+}
+const ORIG = new WeakMap(), ORIGA = new WeakMap(), ATTRS = ['placeholder', 'aria-label', 'label'];
+function localize(root) {
+  if (!root) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode: n => n.parentElement && !/^(SCRIPT|STYLE|CODE)$/.test(n.parentElement.tagName) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT});
+  const nodes = []; while (w.nextNode()) nodes.push(w.currentNode);
+  nodes.forEach(n => { if (!ORIG.has(n)) ORIG.set(n, n.nodeValue); const v = LANG === 'ur' ? tr(ORIG.get(n)) : ORIG.get(n); if (n.nodeValue !== v) n.nodeValue = v; });
+  root.querySelectorAll(ATTRS.map(a => '[' + a + ']').join(',')).forEach(el => {
+    const o = ORIGA.get(el) || {}; ORIGA.set(el, o);
+    ATTRS.forEach(a => { if (!el.hasAttribute(a)) return; if (!(a in o)) o[a] = el.getAttribute(a); el.setAttribute(a, LANG === 'ur' ? tr(o[a]) : o[a]); });
+  });
+}
+function applyLang() {
+  const de = document.documentElement;
+  de.lang = LANG; de.dir = LANG === 'ur' ? 'rtl' : 'ltr';
+  document.title = LANG === 'ur' ? 'نور اکیڈمی — اسلامی کلاسز ایل ایم ایس' : 'Nur Academy — Islamic Classes LMS (prototype)';
+  localize($('#sidebar')); localize($('.topbar'));
+  $('#hijri').textContent = hijri(new Date());
+  $('#langBtn').textContent = LANG === 'ur' ? 'English' : 'اردو';
+  $('#langBtn').lang = LANG === 'ur' ? 'en' : 'ur';
+}
+function setLang(l) { LANG = l; try { localStorage.setItem('nur-lms.lang', l); } catch (e) {} closeModal(); applyLang(); fillWho(); route(); }
+
 /* ---------- UI plumbing ---------- */
-function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
+function toast(msg) { const t = $('#toast'); t.textContent = tr(msg); t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
 function openModal(html, mount) {
-  const m = $('#modal'); m.innerHTML = `<div class="modal-in">${html}</div>`;
+  const m = $('#modal'); m.innerHTML = `<div class="modal-in">${html}</div>`; localize(m);
   if (!m.open) m.showModal();
   m.querySelectorAll('[data-close]').forEach(b => b.onclick = () => m.close());
   if (mount) mount(m);
@@ -176,6 +226,7 @@ function route() {
   }).join('');
   const v = ({dashboard, courses, course:() => courseDetail(arg), schedule, attendance, attend:() => attendMark(arg), students, record, zoom})[p];
   $('#view').innerHTML = v();
+  localize($('#view')); localize($('#nav'));
   bind();
   $('#sidebar').classList.remove('open');
   window.scrollTo(0, 0);
@@ -186,7 +237,7 @@ function sessionRow(s, opts = {}) {
   const c = course(s.courseId), st = new Date(s.start), js = joinState(s);
   const joinBtn = js === 'open' ? `<a class="btn gold sm" href="${esc(s.zoom.joinUrl)}" target="_blank" rel="noopener" data-stop>${isStaff() ? 'Start' : 'Join'}</a>` : '';
   return `<div class="row" data-session="${s.id}" style="cursor:pointer">
-    <div class="when"><b>${st.getDate()}</b><small>${WD[st.getDay()]}</small></div>
+    <div class="when"><b>${st.getDate()}</b><small>${WD()[st.getDay()]}</small></div>
     <div class="grow"><div class="title">${esc(c.title)} <span class="muted">· ${esc(s.title)}</span></div>
       <div class="small muted">${fmtTime(st)} – ${fmtTime(sEnd(s))} · ${esc(user(s.teacherId).name)}${s.status === 'cancelled' ? ' · <span class="badge red">Cancelled</span>' : js === 'open' ? ' · <span class="badge gold">Live window</span>' : ''}</div></div>
     ${joinBtn}${opts.noArrow ? '' : '<span class="muted" aria-hidden="true">›</span>'}</div>`;
@@ -213,7 +264,7 @@ function dashboard() {
       <div class="actions">${js === 'open' ? `<a class="btn gold" href="${esc(next.zoom.joinUrl)}" target="_blank" rel="noopener">${isStaff() ? 'Start on Zoom' : 'Join on Zoom'}</a>` : `<button class="btn gold" disabled>Join opens 10 min before</button>`}
       <button class="btn ghost" data-session="${next.id}">Details</button></div></div>`; })()
     : `<div class="card hero"><h2>No upcoming classes</h2><div class="meta">${isStaff() ? 'Schedule a class to get started.' : 'Your teacher has not scheduled anything yet.'}</div></div>`;
-  return `<div class="page-head"><div><h1>Assalamu alaikum, ${esc(u.name.replace(/ \(.*\)/, '').split(' ').slice(0, 2).join(' '))}</h1><p>${hijri(new Date())} · ${new Date().toLocaleDateString([], {dateStyle:'full'})}</p></div>
+  return `<div class="page-head"><div><h1>Assalamu alaikum, ${esc(u.name.replace(/ \(.*\)/, '').split(' ').slice(0, 2).join(' '))}</h1><p>${hijri(new Date())} · ${new Date().toLocaleDateString(loc(), {dateStyle:'full'})}</p></div>
       ${isStaff() ? '<button class="btn gold" data-new-session>+ Schedule class</button>' : ''}</div>
     <div class="grid cols-4" style="margin-bottom:16px">${stats}</div>
     <div class="grid two"><div class="grid">${hero}
@@ -256,12 +307,12 @@ function courseDetail(id) {
 function schedule() {
   const days = [...Array(7)].map((_, i) => addDays(weekStart, i)), ss = mySessions();
   const todayT = sod(new Date()).getTime();
-  const label = `${days[0].toLocaleDateString([], {day:'numeric', month:'short'})} – ${days[6].toLocaleDateString([], {day:'numeric', month:'short', year:'numeric'})}`;
+  const label = `${days[0].toLocaleDateString(loc(), {day:'numeric', month:'short'})} – ${days[6].toLocaleDateString(loc(), {day:'numeric', month:'short', year:'numeric'})}`;
   return `<div class="page-head"><div><h1>Class schedule</h1><p>Times shown in your local time zone.</p></div>
-    <div class="week-nav"><button class="btn ghost sm" data-week="-1">‹ Prev</button><button class="btn ghost sm" data-week="0">Today</button><button class="btn ghost sm" data-week="1">Next ›</button><b style="margin-left:6px">${label}</b>${isStaff() ? '<button class="btn gold sm" data-new-session>+ Schedule class</button>' : ''}</div></div>
+    <div class="week-nav"><button class="btn ghost sm" data-week="-1">‹ Prev</button><button class="btn ghost sm" data-week="0">Today</button><button class="btn ghost sm" data-week="1">Next ›</button><b style="margin-inline-start:6px">${label}</b>${isStaff() ? '<button class="btn gold sm" data-new-session>+ Schedule class</button>' : ''}</div></div>
     <div class="week">${days.map(d => {
       const list = ss.filter(s => sod(new Date(s.start)).getTime() === d.getTime());
-      return `<div class="day ${d.getTime() === todayT ? 'today' : ''}"><div class="day-h">${WD[d.getDay()]}<b>${d.getDate()}</b></div>${list.map(s => {
+      return `<div class="day ${d.getTime() === todayT ? 'today' : ''}"><div class="day-h">${WD()[d.getDay()]}<b>${d.getDate()}</b></div>${list.map(s => {
         const c = course(s.courseId), done = s.status === 'completed' || sEnd(s) < new Date();
         return `<button class="chip ${s.status === 'cancelled' ? 'cancelled' : done ? 'done' : ''}" style="--c:${c.color}" data-session="${s.id}"><b>${fmtTime(new Date(s.start))}</b>${esc(c.title)}</button>`; }).join('')}</div>`; }).join('')}</div>`;
 }
@@ -271,7 +322,7 @@ function attendance() {
   return `<div class="page-head"><div><h1>Attendance</h1><p>Open a class to mark who attended.</p></div></div>
     <div class="card"><div class="list">${done.map(s => {
       const a = db.attendance[s.id], n = enrolled(s.courseId).length, marked = a ? Object.keys(a).length : 0, st = new Date(s.start);
-      return `<a class="row" href="#attend-${s.id}" style="text-decoration:none;color:inherit"><div class="when"><b>${st.getDate()}</b><small>${WD[st.getDay()]}</small></div>
+      return `<a class="row" href="#attend-${s.id}" style="text-decoration:none;color:inherit"><div class="when"><b>${st.getDate()}</b><small>${WD()[st.getDay()]}</small></div>
         <div class="grow"><div class="title">${esc(course(s.courseId).title)} <span class="muted">· ${esc(s.title)}</span></div><div class="small muted">${fmtTime(st)} · ${esc(user(s.teacherId).name)}</div></div>
         <span class="badge ${marked >= n && n ? '' : marked ? 'amber' : 'red'}">${marked}/${n} marked</span></a>`; }).join('') || '<div class="empty">No past classes yet.</div>'}</div></div>`;
 }
@@ -289,7 +340,7 @@ function students() {
   cs.forEach(c => enrolled(c.id).forEach(s => { (seen.get(s.id) || seen.set(s.id, {s, cs:[]}).get(s.id)).cs.push(c); }));
   const list = isAdmin() ? db.users.filter(u => u.role === 'student').map(s => seen.get(s.id) || {s, cs:[]}) : [...seen.values()];
   return `<div class="page-head"><div><h1>${isAdmin() ? 'Students' : 'My students'}</h1><p>${list.length} learners</p></div>${isAdmin() ? '<button class="btn gold" data-new-student>+ Add student</button>' : ''}</div>
-    <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Courses</th><th>Attendance</th>${isAdmin() ? '<th></th>' : ''}</tr></thead><tbody>${list.map(({s, cs}) => { const r = attRate(s.id); return `<tr><td><b>${esc(s.name)}</b><div class="small muted">${esc(s.email || '')}</div></td><td>${cs.map(c => `<a class="badge" style="text-decoration:none" href="#course-${c.id}">${esc(c.title.split(/[—&]/)[0].trim())}</a>`).join(' ') || '<span class="muted">—</span>'}</td><td>${r === null ? '—' : `<span class="badge ${r >= 80 ? '' : r >= 60 ? 'amber' : 'red'}">${r}%</span>`}</td>${isAdmin() ? `<td><button class="btn ghost sm" data-enroll-student="${s.id}">Enrol in course</button></td>` : ''}</tr>`; }).join('')}</tbody></table></div></div>`;
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Courses</th><th>Attendance</th>${isAdmin() ? '<th></th>' : ''}</tr></thead><tbody>${list.map(({s, cs}) => { const r = attRate(s.id); return `<tr><td><b>${esc(s.name)}</b><div class="small muted">${esc(s.email || '')}</div></td><td>${cs.map(c => `<a class="badge" style="text-decoration:none" href="#course-${c.id}">${esc(tr(c.title).split(/[—&]/)[0].trim())}</a>`).join(' ') || '<span class="muted">—</span>'}</td><td>${r === null ? '—' : `<span class="badge ${r >= 80 ? '' : r >= 60 ? 'amber' : 'red'}">${r}%</span>`}</td>${isAdmin() ? `<td><button class="btn ghost sm" data-enroll-student="${s.id}">Enrol in course</button></td>` : ''}</tr>`; }).join('')}</tbody></table></div></div>`;
 }
 
 function record() {
@@ -300,11 +351,12 @@ function record() {
       const col = {present:'', late:'amber', absent:'red', excused:'blue'};
       return `<div class="card" style="border-top:5px solid ${c.color}"><h2>${esc(c.title)}</h2><div class="bar"><i style="width:${p.pct}%"></i></div><p class="small muted">${p.pct}% · ${esc(c.unit)}: ${esc(p.current || '—')}</p>
         <p class="small"><b>Teacher note:</b> ${esc(p.note || '—')}</p><p class="small muted" style="margin-bottom:6px">Attendance ${r === null ? '—' : r + '%'}</p>
-        <div>${hist.map(s => `<span class="badge ${col[db.attendance[s.id][u.id]]}" title="${fmtDate(new Date(s.start))}">${WD[new Date(s.start).getDay()]} ${new Date(s.start).getDate()} · ${db.attendance[s.id][u.id]}</span>`).join(' ') || '<span class="muted small">No records yet.</span>'}</div></div>`; }).join('')}</div>`;
+        <div>${hist.map(s => `<span class="badge ${col[db.attendance[s.id][u.id]]}" title="${fmtDate(new Date(s.start))}">${WD()[new Date(s.start).getDay()]} ${new Date(s.start).getDate()} · ${db.attendance[s.id][u.id]}</span>`).join(' ') || '<span class="muted small">No records yet.</span>'}</div></div>`; }).join('')}</div>`;
 }
 
 function zoom() {
   const n = db.sessions.filter(s => s.zoom).length;
+  if (LANG === 'ur') return UR.zoomPage(n);
   return `<div class="page-head"><div><h1>Zoom setup</h1><p>How classes get their meeting links.</p></div><button class="btn danger sm" data-reset>Reset demo data</button></div>
     <div class="note"><b>Prototype mode.</b> Meeting IDs and passcodes are generated locally to show the flow — they do not open real Zoom meetings. You can still paste any real Zoom link when scheduling a class.</div>
     <div class="grid two"><div class="card"><h2>Production integration plan</h2><ol class="steps">
@@ -324,7 +376,7 @@ function sessionModal(id) {
   const canEdit = isAdmin() || (me().role === 'teacher' && s.teacherId === me().id);
   const seriesCount = s.seriesId ? db.sessions.filter(x => x.seriesId === s.seriesId && x.status === 'scheduled' && new Date(x.start) >= st).length : 0;
   openModal(`<h2>${esc(c.title)}</h2><dl class="kv"><dt>Class</dt><dd>${esc(s.title)} ${s.status === 'cancelled' ? '<span class="badge red">Cancelled</span>' : s.status === 'completed' ? '<span class="badge grey">Completed</span>' : ''}</dd>
-    <dt>When</dt><dd>${st.toLocaleDateString([], {dateStyle:'full'})}<br>${fmtTime(st)} – ${fmtTime(sEnd(s))} (${s.duration} min) · ${hijri(st)}</dd><dt>Teacher</dt><dd>${esc(user(s.teacherId).name)}</dd></dl>
+    <dt>When</dt><dd>${st.toLocaleDateString(loc(), {dateStyle:'full'})}<br>${fmtTime(st)} – ${fmtTime(sEnd(s))} (${s.duration} min) · ${hijri(st)}</dd><dt>Teacher</dt><dd>${esc(user(s.teacherId).name)}</dd></dl>
     <div class="zoom-box"><b>🎥 Zoom meeting</b> ${s.zoom.mode === 'demo' ? '<span class="badge amber">simulated</span>' : ''}<br>
       ID <code>${esc(fmtMeetingId(s.zoom.meetingId))}</code> · Passcode <code>${esc(s.zoom.passcode)}</code><br><span class="small" style="word-break:break-all">${esc(s.zoom.joinUrl)}</span></div>
     <div class="modal-actions">
@@ -350,12 +402,12 @@ function sessionForm(existing, courseId) {
   const e = existing, def = e ? new Date(e.start) : (() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(18, 0, 0, 0); return d; })();
   openModal(`<h2>${e ? 'Reschedule class' : 'Schedule a class'}</h2><form id="sf">
     <div class="field"><label for="f-course">Course</label><select id="f-course" name="course" ${e ? 'disabled' : ''}>${cs.map(c => `<option value="${c.id}" ${(e ? e.courseId : courseId) === c.id ? 'selected' : ''}>${esc(c.title)} — ${esc(user(c.teacherId).name)}</option>`).join('')}</select></div>
-    <div class="field"><label for="f-title">Class title</label><input id="f-title" name="title" required value="${esc(e ? e.title : 'Weekly class')}"></div>
+    <div class="field"><label for="f-title">Class title</label><input id="f-title" name="title" required value="${esc(e ? e.title : tr('Weekly class'))}"></div>
     <div class="field-row"><div class="field"><label for="f-start">Date & time</label><input id="f-start" type="datetime-local" name="start" required value="${toLocalInput(def)}"></div>
       <div class="field"><label for="f-dur">Duration (minutes)</label><input id="f-dur" type="number" name="duration" min="15" max="240" step="5" required value="${e ? e.duration : 60}"></div></div>
     ${e ? '<p class="small muted">Changes apply to this class only. The Zoom link stays the same.</p>' : `
     <div class="field"><label for="f-rep">Repeat</label><select id="f-rep" name="repeat"><option value="none">Does not repeat</option><option value="weekly">Weekly</option></select></div>
-    <div id="rep-opts" hidden><fieldset><legend class="small muted" style="font-weight:600">On these days</legend><div class="checks">${WD.map((d, i) => `<label><input type="checkbox" name="wd" value="${i}">${d}</label>`).join('')}</div></fieldset>
+    <div id="rep-opts" hidden><fieldset><legend class="small muted" style="font-weight:600">On these days</legend><div class="checks">${WD().map((d, i) => `<label><input type="checkbox" name="wd" value="${i}">${d}</label>`).join('')}</div></fieldset>
       <div class="field"><label for="f-weeks">For how many weeks</label><input id="f-weeks" type="number" name="weeks" min="1" max="52" value="8"></div></div>
     <fieldset><legend class="small muted" style="font-weight:600">Zoom meeting</legend><div class="checks"><label><input type="radio" name="zmode" value="auto" checked>Create automatically (simulated)</label><label><input type="radio" name="zmode" value="manual">Paste my own link</label></div></fieldset>
     <div class="field" id="zurl" hidden><label for="f-zurl">Zoom join link</label><input id="f-zurl" type="url" name="zurl" placeholder="https://zoom.us/j/123456789?pwd=…"></div>`}
@@ -470,12 +522,14 @@ function bind() {
 function fillWho() {
   const groups = [['admin','Admin'],['teacher','Teachers'],['student','Students']];
   $('#who').innerHTML = groups.map(([r, l]) => `<optgroup label="${l}">${db.users.filter(u => u.role === r).map(u => `<option value="${u.id}" ${u.id === db.me ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}</optgroup>`).join('');
+  localize($('#who'));
 }
 
 /* ---------- boot ---------- */
 load();
 fillWho();
-$('#hijri').textContent = hijri(new Date());
+applyLang();
+$('#langBtn').onclick = () => setLang(LANG === 'ur' ? 'en' : 'ur');
 $('#who').onchange = e => { db.me = e.target.value; save(); location.hash = '#dashboard'; route(); };
 $('#menuBtn').onclick = () => $('#sidebar').classList.toggle('open');
 window.addEventListener('hashchange', route);
