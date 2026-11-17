@@ -149,6 +149,11 @@ function openModal(html, mount) {
   if (mount) mount(m);
 }
 const closeModal = () => { const m = $('#modal'); if (m.open) m.close(); };
+function ask(msg, yes, label = 'Confirm') {
+  openModal(`<h2>${esc(msg)}</h2><div class="modal-actions"><button class="btn ghost" data-close>Go back</button><button class="btn danger" id="ask-yes">${esc(label)}</button></div>`,
+    m => { $('#ask-yes', m).onclick = () => { closeModal(); yes(); }; });
+}
+function notice(msg) { openModal(`<h2>Can't schedule that</h2><p>${esc(msg)}</p><div class="modal-actions"><button class="btn" data-close>OK</button></div>`); }
 function copy(text) { (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('Copied'), () => toast('Copy not available')); }
 
 const NAV = {
@@ -162,12 +167,12 @@ let weekStart = startOfWeek(new Date());
 function startOfWeek(d) { return addDays(sod(d), -sod(d).getDay()); }
 
 function route() {
-  const [page = 'dashboard', arg] = (location.hash.replace(/^#\/?/, '') || 'dashboard').split('/');
+  const h = location.hash.replace(/^#\/?/, '') || 'dashboard', i = h.indexOf('-'), page = i < 0 ? h : h.slice(0, i), arg = i < 0 ? '' : h.slice(i + 1);
   const allowed = NAV[me().role].map(n => n[0]).concat(['course', 'attend']);
   const p = allowed.includes(page) ? page : 'dashboard';
   $('#nav').innerHTML = NAV[me().role].map(([k, ico, label]) => {
     const active = p === k || (p === 'course' && k === 'courses') || (p === 'attend' && k === 'attendance');
-    return `<a href="#/${k}" class="${active ? 'active' : ''}"><span aria-hidden="true">${ico}</span>${label}</a>`;
+    return `<a href="#${k}" class="${active ? 'active' : ''}"><span aria-hidden="true">${ico}</span>${label}</a>`;
   }).join('');
   const v = ({dashboard, courses, course:() => courseDetail(arg), schedule, attendance, attend:() => attendMark(arg), students, record, zoom})[p];
   $('#view').innerHTML = v();
@@ -213,7 +218,7 @@ function dashboard() {
     <div class="grid cols-4" style="margin-bottom:16px">${stats}</div>
     <div class="grid two"><div class="grid">${hero}
       <div class="card"><h2>Upcoming classes</h2><div class="list">${up.slice(0, 6).map(s => sessionRow(s)).join('') || '<div class="empty">Nothing scheduled.</div>'}</div></div></div>
-      <div class="card"><h2>${u.role === 'student' ? 'My courses' : 'Courses'}</h2><div class="list">${cs.map(c => `<a class="row" href="#/course/${c.id}" style="text-decoration:none;color:inherit"><div class="grow"><div class="title">${esc(c.title)}</div><div class="small muted">${enrolled(c.id).length} students</div></div><span class="badge">${u.role === 'student' ? prog(c.id, u.id).pct : courseAvg(c.id)}%</span></a>`).join('') || '<div class="empty">No courses yet.</div>'}</div></div></div>`;
+      <div class="card"><h2>${u.role === 'student' ? 'My courses' : 'Courses'}</h2><div class="list">${cs.map(c => `<a class="row" href="#course-${c.id}" style="text-decoration:none;color:inherit"><div class="grow"><div class="title">${esc(c.title)}</div><div class="small muted">${enrolled(c.id).length} students</div></div><span class="badge">${u.role === 'student' ? prog(c.id, u.id).pct : courseAvg(c.id)}%</span></a>`).join('') || '<div class="empty">No courses yet.</div>'}</div></div></div>`;
 }
 const stat = (n, l) => `<div class="card stat"><b>${n}</b><span>${l}</span></div>`;
 
@@ -223,7 +228,7 @@ function courses() {
     ${isAdmin() ? '<button class="btn gold" data-new-course>+ New course</button>' : ''}</div>
     <div class="grid cols-3">${myCourses().map(c => {
       const pct = u.role === 'student' ? prog(c.id, u.id).pct : courseAvg(c.id);
-      return `<a class="card course-card" href="#/course/${c.id}" style="--c:${c.color};text-decoration:none;color:inherit">
+      return `<a class="card course-card" href="#course-${c.id}" style="--c:${c.color};text-decoration:none;color:inherit">
         <div class="ar" lang="ar">${esc(c.ar)}</div><h2 style="margin:0">${esc(c.title)}</h2>
         <div class="small muted">${esc(user(c.teacherId).name)} · <span class="badge grey">${esc(c.level)}</span></div>
         <div class="bar"><i style="width:${pct}%"></i></div>
@@ -240,7 +245,7 @@ function courseDetail(id) {
     return `<tr><td><b>${esc(s.name)}</b></td><td style="min-width:150px"><div class="bar"><i style="width:${p.pct}%"></i></div><span class="small muted">${p.pct}% · ${esc(p.current || '—')}</span></td><td>${ar === null ? '—' : ar + '%'}</td>
       <td class="small muted">${esc(p.note)}</td><td>${canEdit ? `<button class="btn ghost sm" data-prog="${c.id}:${s.id}">Update</button> ${isAdmin() ? `<button class="btn danger sm" data-unenroll="${c.id}:${s.id}">Remove</button>` : ''}` : ''}</td></tr>`;
   }).join('');
-  return `<p><a href="#/courses">← Courses</a></p>
+  return `<p><a href="#courses">← Courses</a></p>
     <div class="page-head"><div><div class="ar" lang="ar" style="font-family:Amiri,serif;font-size:1.6rem;color:${c.color}">${esc(c.ar)}</div><h1>${esc(c.title)}</h1><p>${esc(c.desc)}</p>
       <p><span class="badge grey">${esc(c.level)}</span> <span class="badge">${esc(user(c.teacherId).name)}</span></p></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${isStaff() && canEdit ? `<button class="btn gold" data-new-session="${c.id}">+ Schedule class</button>` : ''}${isAdmin() ? `<button class="btn ghost" data-edit-course="${c.id}">Edit</button><button class="btn ghost" data-enroll="${c.id}">+ Enrol student</button>` : ''}</div></div>
@@ -266,7 +271,7 @@ function attendance() {
   return `<div class="page-head"><div><h1>Attendance</h1><p>Open a class to mark who attended.</p></div></div>
     <div class="card"><div class="list">${done.map(s => {
       const a = db.attendance[s.id], n = enrolled(s.courseId).length, marked = a ? Object.keys(a).length : 0, st = new Date(s.start);
-      return `<a class="row" href="#/attend/${s.id}" style="text-decoration:none;color:inherit"><div class="when"><b>${st.getDate()}</b><small>${WD[st.getDay()]}</small></div>
+      return `<a class="row" href="#attend-${s.id}" style="text-decoration:none;color:inherit"><div class="when"><b>${st.getDate()}</b><small>${WD[st.getDay()]}</small></div>
         <div class="grow"><div class="title">${esc(course(s.courseId).title)} <span class="muted">· ${esc(s.title)}</span></div><div class="small muted">${fmtTime(st)} · ${esc(user(s.teacherId).name)}</div></div>
         <span class="badge ${marked >= n && n ? '' : marked ? 'amber' : 'red'}">${marked}/${n} marked</span></a>`; }).join('') || '<div class="empty">No past classes yet.</div>'}</div></div>`;
 }
@@ -275,7 +280,7 @@ function attendMark(id) {
   const s = db.sessions.find(x => x.id === id); if (!s || !isStaff()) return '<div class="card empty">Not available.</div>';
   const c = course(s.courseId), es = enrolled(c.id), a = db.attendance[s.id] || {};
   const opts = [['present','Present'],['late','Late'],['absent','Absent'],['excused','Excused']];
-  return `<p><a href="#/attendance">← Attendance</a></p><div class="page-head"><div><h1>${esc(c.title)}</h1><p>${fmtDate(new Date(s.start))}, ${fmtTime(new Date(s.start))} · ${esc(s.title)}</p></div><button class="btn" data-all-present="${s.id}">Mark all present</button></div>
+  return `<p><a href="#attendance">← Attendance</a></p><div class="page-head"><div><h1>${esc(c.title)}</h1><p>${fmtDate(new Date(s.start))}, ${fmtTime(new Date(s.start))} · ${esc(s.title)}</p></div><button class="btn" data-all-present="${s.id}">Mark all present</button></div>
     <div class="card"><div class="list">${es.map(st => `<div class="row"><div class="grow"><b>${esc(st.name)}</b></div><div class="seg" role="group" aria-label="Attendance for ${esc(st.name)}">${opts.map(([k, l]) => `<button class="${k} ${a[st.id] === k ? 'on' : ''}" data-mark="${s.id}:${st.id}:${k}" aria-pressed="${a[st.id] === k}">${l}</button>`).join('')}</div></div>`).join('') || '<div class="empty">No students enrolled.</div>'}</div></div>`;
 }
 
@@ -284,7 +289,7 @@ function students() {
   cs.forEach(c => enrolled(c.id).forEach(s => { (seen.get(s.id) || seen.set(s.id, {s, cs:[]}).get(s.id)).cs.push(c); }));
   const list = isAdmin() ? db.users.filter(u => u.role === 'student').map(s => seen.get(s.id) || {s, cs:[]}) : [...seen.values()];
   return `<div class="page-head"><div><h1>${isAdmin() ? 'Students' : 'My students'}</h1><p>${list.length} learners</p></div>${isAdmin() ? '<button class="btn gold" data-new-student>+ Add student</button>' : ''}</div>
-    <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Courses</th><th>Attendance</th>${isAdmin() ? '<th></th>' : ''}</tr></thead><tbody>${list.map(({s, cs}) => { const r = attRate(s.id); return `<tr><td><b>${esc(s.name)}</b><div class="small muted">${esc(s.email || '')}</div></td><td>${cs.map(c => `<a class="badge" style="text-decoration:none" href="#/course/${c.id}">${esc(c.title.split(/[—&]/)[0].trim())}</a>`).join(' ') || '<span class="muted">—</span>'}</td><td>${r === null ? '—' : `<span class="badge ${r >= 80 ? '' : r >= 60 ? 'amber' : 'red'}">${r}%</span>`}</td>${isAdmin() ? `<td><button class="btn ghost sm" data-enroll-student="${s.id}">Enrol in course</button></td>` : ''}</tr>`; }).join('')}</tbody></table></div></div>`;
+    <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Courses</th><th>Attendance</th>${isAdmin() ? '<th></th>' : ''}</tr></thead><tbody>${list.map(({s, cs}) => { const r = attRate(s.id); return `<tr><td><b>${esc(s.name)}</b><div class="small muted">${esc(s.email || '')}</div></td><td>${cs.map(c => `<a class="badge" style="text-decoration:none" href="#course-${c.id}">${esc(c.title.split(/[—&]/)[0].trim())}</a>`).join(' ') || '<span class="muted">—</span>'}</td><td>${r === null ? '—' : `<span class="badge ${r >= 80 ? '' : r >= 60 ? 'amber' : 'red'}">${r}%</span>`}</td>${isAdmin() ? `<td><button class="btn ghost sm" data-enroll-student="${s.id}">Enrol in course</button></td>` : ''}</tr>`; }).join('')}</tbody></table></div></div>`;
 }
 
 function record() {
@@ -324,19 +329,18 @@ function sessionModal(id) {
       ID <code>${esc(fmtMeetingId(s.zoom.meetingId))}</code> · Passcode <code>${esc(s.zoom.passcode)}</code><br><span class="small" style="word-break:break-all">${esc(s.zoom.joinUrl)}</span></div>
     <div class="modal-actions">
       ${js === 'open' ? `<a class="btn gold" href="${esc(s.zoom.joinUrl)}" target="_blank" rel="noopener">${isStaff() ? 'Start on Zoom' : 'Join on Zoom'}</a>` : js === 'soon' ? `<button class="btn" disabled>Join opens 10 min before (${until(s)})</button>` : ''}
-      <button class="btn ghost" data-copy="${esc(s.zoom.joinUrl)}">Copy link</button><button class="btn ghost" data-ics="${s.id}">Add to calendar</button>
-      ${isStaff() && new Date(s.start) <= new Date() ? `<a class="btn ghost" href="#/attend/${s.id}" data-close-link>Attendance</a>` : ''}
+      <button class="btn ghost" data-copy="${esc(s.zoom.joinUrl)}">Copy link</button><a class="btn ghost" href="${esc(gcalUrl(s))}" target="_blank" rel="noopener">Add to calendar</a>
+      ${isStaff() && new Date(s.start) <= new Date() ? `<a class="btn ghost" href="#attend-${s.id}" data-close-link>Attendance</a>` : ''}
       ${canEdit && s.status === 'scheduled' && js !== 'ended' ? `<button class="btn ghost" data-edit-session="${s.id}">Reschedule</button><button class="btn danger" data-cancel="${s.id}">Cancel class</button>` : ''}
       ${canEdit && s.status === 'scheduled' && seriesCount > 1 ? `<button class="btn danger" data-cancel-series="${s.id}">Cancel this & ${seriesCount - 1} later</button>` : ''}
       <button class="btn ghost" data-close>Close</button></div>`,
     m => {
       m.querySelector('[data-copy]').onclick = e => copy(e.target.dataset.copy);
-      m.querySelector('[data-ics]').onclick = () => downloadIcs(s);
       const l = m.querySelector('[data-close-link]'); if (l) l.onclick = () => m.close();
       const bind1 = (sel, fn) => { const b = m.querySelector(sel); if (b) b.onclick = fn; };
       bind1('[data-edit-session]', () => sessionForm(s));
-      bind1('[data-cancel]', () => { if (confirm('Cancel this class? Students will see it as cancelled.')) { s.status = 'cancelled'; save(); closeModal(); route(); toast('Class cancelled (Zoom meeting would be deleted)'); } });
-      bind1('[data-cancel-series]', () => { if (confirm('Cancel this and all later classes in the series?')) { db.sessions.forEach(x => { if (x.seriesId === s.seriesId && x.status === 'scheduled' && new Date(x.start) >= st) x.status = 'cancelled'; }); save(); closeModal(); route(); toast('Series cancelled'); } });
+      bind1('[data-cancel]', () => { ask('Cancel this class? Students will see it as cancelled.', () => { s.status = 'cancelled'; save(); route(); toast('Class cancelled (Zoom meeting would be deleted)'); }, 'Cancel class'); });
+      bind1('[data-cancel-series]', () => { ask('Cancel this and all later classes in the series?', () => { db.sessions.forEach(x => { if (x.seriesId === s.seriesId && x.status === 'scheduled' && new Date(x.start) >= st) x.status = 'cancelled'; }); save(); route(); toast('Series cancelled'); }, 'Cancel series'); });
     });
 }
 
@@ -376,7 +380,7 @@ function sessionForm(existing, courseId) {
       }
       const conflicts = starts.filter(st => db.sessions.some(x => x.teacherId === c.teacherId && x.status === 'scheduled' && (!e || x.id !== e.id) &&
         new Date(x.start) < new Date(st.getTime() + dur * MIN) && sEnd(x) > st));
-      if (conflicts.length) return alert(`${user(c.teacherId).name} already has a class at ${fmtDate(conflicts[0])} ${fmtTime(conflicts[0])}${conflicts.length > 1 ? ` (and ${conflicts.length - 1} more)` : ''}. Choose another time.`);
+      if (conflicts.length) return notice(`${user(c.teacherId).name} already has a class at ${fmtDate(conflicts[0])} ${fmtTime(conflicts[0])}${conflicts.length > 1 ? ` (and ${conflicts.length - 1} more)` : ''}. Choose another time.`);
       if (e) { e.title = f.title.value.trim(); e.start = start.toISOString(); e.duration = dur; toast('Class updated (Zoom meeting would be PATCHed)'); }
       else {
         let z; if (f.zmode.value === 'manual') { if (!f.zurl.value) return toast('Paste a Zoom link'); z = zoomFromUrl(f.zurl.value.trim()); } else z = zoomCreateMeeting(c.title);
@@ -385,7 +389,7 @@ function sessionForm(existing, courseId) {
         toast(starts.length > 1 ? `${starts.length} classes scheduled with one recurring Zoom link` : 'Class scheduled & Zoom link created');
         weekStart = startOfWeek(start);
       }
-      save(); closeModal(); if (!location.hash.startsWith('#/schedule') && !e) location.hash = '#/schedule'; else route();
+      save(); closeModal(); if (!location.hash.startsWith('#schedule') && !e) location.hash = '#schedule'; else route();
     };
   });
 }
@@ -401,7 +405,7 @@ function courseForm(c) {
   m => { $('#cf', m).onsubmit = ev => { ev.preventDefault(); const f = ev.target;
     const o = c || {id:uid('c'), color:['#0f4c3a','#7a5a12','#1d5fa8','#8a3b2a','#5b3f8c'][db.courses.length % 5], unit:'Lessons completed'};
     Object.assign(o, {title:f.title.value.trim(), ar:f.ar.value.trim(), level:f.level.value, teacherId:f.teacher.value, desc:f.desc.value.trim()});
-    if (!c) db.courses.push(o); save(); closeModal(); location.hash = '#/course/' + o.id; route(); toast('Course saved'); }; });
+    if (!c) db.courses.push(o); save(); closeModal(); location.hash = '#course-' + o.id; route(); toast('Course saved'); }; });
 }
 
 function enrollModal(cid, sid) {
@@ -432,12 +436,11 @@ function progressModal(key) {
     f.onsubmit = ev => { ev.preventDefault(); db.progress[key] = {pct:+f.pct.value, current:f.cur.value.trim(), note:f.note.value.trim()}; save(); closeModal(); route(); toast('Progress saved'); }; });
 }
 
-function downloadIcs(s) {
+function gcalUrl(s) {
   const z = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
   const c = course(s.courseId);
-  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Nur Academy//LMS//EN','BEGIN:VEVENT',`UID:${s.id}@nur-academy`,`DTSTAMP:${z(Date.now())}`,`DTSTART:${z(s.start)}`,`DTEND:${z(sEnd(s))}`,
-    `SUMMARY:${c.title} - ${s.title}`,`DESCRIPTION:Zoom: ${s.zoom.joinUrl}\\nMeeting ID: ${s.zoom.meetingId}\\nPasscode: ${s.zoom.passcode}`,`URL:${s.zoom.joinUrl}`,'BEGIN:VALARM','TRIGGER:-PT15M','ACTION:DISPLAY','DESCRIPTION:Class starts in 15 minutes','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], {type:'text/calendar'})); a.download = 'class.ics'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(c.title + ' - ' + s.title) + '&dates=' + z(s.start) + '/' + z(sEnd(s)) +
+    '&details=' + encodeURIComponent('Zoom: ' + s.zoom.joinUrl + '\nMeeting ID: ' + s.zoom.meetingId + '\nPasscode: ' + s.zoom.passcode) + '&location=' + encodeURIComponent(s.zoom.joinUrl);
 }
 
 /* ---------- event binding (delegated per render) ---------- */
@@ -457,10 +460,10 @@ function bind() {
     if (d.enrollStudent) return enrollModal(null, d.enrollStudent);
     if ('newStudent' in d) return studentModal();
     if (d.prog) return progressModal(d.prog);
-    if (d.unenroll) { const [c, s] = d.unenroll.split(':'); if (confirm('Remove this student from the course?')) { db.enrollments = db.enrollments.filter(x => !(x.courseId === c && x.studentId === s)); save(); route(); } return; }
+    if (d.unenroll) { const [c, s] = d.unenroll.split(':'); ask('Remove this student from the course?', () => { db.enrollments = db.enrollments.filter(x => !(x.courseId === c && x.studentId === s)); save(); route(); }, 'Remove'); return; }
     if (d.mark) { const [sid, st, k] = d.mark.split(':'); (db.attendance[sid] = db.attendance[sid] || {})[st] = k; save(); return route(); }
     if (d.allPresent) { const a = db.attendance[d.allPresent] = db.attendance[d.allPresent] || {}; enrolled(db.sessions.find(x => x.id === d.allPresent).courseId).forEach(s => a[s.id] = 'present'); save(); toast('All marked present'); return route(); }
-    if ('reset' in d) { if (confirm('Reset all demo data?')) resetDemo(); }
+    if ('reset' in d) ask('Reset all demo data?', resetDemo, 'Reset');
   };
 }
 
@@ -473,9 +476,9 @@ function fillWho() {
 load();
 fillWho();
 $('#hijri').textContent = hijri(new Date());
-$('#who').onchange = e => { db.me = e.target.value; save(); location.hash = '#/dashboard'; route(); };
+$('#who').onchange = e => { db.me = e.target.value; save(); location.hash = '#dashboard'; route(); };
 $('#menuBtn').onclick = () => $('#sidebar').classList.toggle('open');
 window.addEventListener('hashchange', route);
 route();
-setInterval(() => { if (!$('#modal').open && /^#?\/?(dashboard|schedule)?$/.test(location.hash)) route(); }, 60000);
+setInterval(() => { if (!$('#modal').open && /^#?(dashboard|schedule)?$/.test(location.hash)) route(); }, 60000);
 })();
